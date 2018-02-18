@@ -7,8 +7,9 @@
 
 (defparameter *test* nil)
 
-(define-widget main (QWidget)
-  ((num :initform 2 :initarg :num :accessor num)
+(define-widget levelmeter-main (QWidget)
+  ((node-id :initarg :node-id :accessor node-id)
+   (num :initform 2 :initarg :num :accessor num)
    (meters :initarg :meters :accessor meters)))
 
 (define-widget levelmeter (QWidget)
@@ -32,7 +33,7 @@
          (setf (q+:brush painter) (q+:make-qbrush (q+:qt.green) (q+:qt.solid-pattern)))))
       (q+:draw-rect painter 0 height width (round (- 0 (* height 0.01 level)))))))
 
-(define-subwidget (main layout) (q+:make-qhboxlayout main)
+(define-subwidget (levelmeter-main layout) (q+:make-qhboxlayout levelmeter-main)
   (setf meters (make-array (list num)
                            :element-type 'levelmeter
                            :initial-element (make-instance 'levelmeter)))
@@ -41,11 +42,11 @@
           (setf (aref meters idx) meter)
           (q+:add-widget layout meter))))
 
-(define-initializer (main setup)
-  (setf (q+:window-title main) "meters")
-  (q+:set-style-sheet main "background-color: #202020;")
-  (q+:set-geometry main 50 50 (* num 25) 400)
-  (setf *test* main))
+(define-initializer (levelmeter-main setup)
+  (setf (q+:window-title levelmeter-main) "meters")
+  (q+:set-style-sheet levelmeter-main "background-color: #202020;")
+  (q+:set-geometry levelmeter-main 50 50 (* num 25) 400)
+  (setf *test* levelmeter-main))
 
 (define-signal (levelmeter set-level) (int))
 
@@ -61,8 +62,14 @@
 
 ;;; (change-level (aref (meters *test*) 0) (random 100)
 
-(defun meter-gui (&key (num 2))
+(defun meter-gui (&key (num 2) node-id)
   (with-controller ()
-    (q+:show (make-instance 'main :num num))))
+    (q+:show (make-instance 'levelmeter-main :num num :node-id node-id))))
 
 ;;; (meter-gui :num 16)
+
+(define-override (levelmeter-main close-event) (ev)
+  (declare (ignore ev))
+  (incudine:free (node-id levelmeter-main))
+  (format t "closing: ~a" levelmeter-main)
+  (call-next-qmethod))

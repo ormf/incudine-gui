@@ -29,3 +29,13 @@ body)
                               :blocking NIL)
   (q+:qapplication-set-quit-on-last-window-closed NIL)
   (setf *controller* controller))
+
+;;; controller startup
+
+(defun init-controller ()
+  (with-main-window
+      (controller 'controller
+                  :show NIL :main-thread T
+                  :blocking NIL)
+    (q+:qapplication-set-quit-on-last-window-closed NIL)
+    (setf *controller* controller)))

@@ -31,3 +31,7 @@
   (levelmeter (audio-in (round chan)) freq 0)
   (levelmeter (audio-in (round (1+ chan))) freq 1))
 
+(defun meteor (&key (num 2))
+  (let ((node-id (next-node-id)))
+    (cuda-gui:meter-gui :num num :node-id node-id)
+    (stereometer 5 0 :id node-id)))
