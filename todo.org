@@ -1,0 +1,5 @@
+* (Multi)Slider
+** all sliders produce normalized single-floats [0.0 .. 1.0]
+** a value fn can be submitted (in a list for multisliders)
+** a label can be submitted (in a list for multisliders)
+** a format string for the value label can be submitted (in a list for multisliders)

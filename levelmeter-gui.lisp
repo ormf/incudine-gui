@@ -8,7 +8,8 @@
 (defparameter *test* nil)
 
 (define-widget levelmeter-main (QWidget)
-  ((node-id :initarg :node-id :accessor node-id)
+  ((window-title :initform "Meters" :initarg :window-title :accessor window-title)
+   (node-id :initarg :node-id :accessor node-id)
    (num :initform 2 :initarg :num :accessor num)
    (meters :initarg :meters :accessor meters)))
 
@@ -43,7 +44,7 @@
           (q+:add-widget layout meter))))
 
 (define-initializer (levelmeter-main setup)
-  (setf (q+:window-title levelmeter-main) "meters")
+  (setf (q+:window-title levelmeter-main) window-title)
   (q+:set-style-sheet levelmeter-main "background-color: #202020;")
   (q+:set-geometry levelmeter-main 50 50 (* num 25) 400)
   (setf *test* levelmeter-main))
@@ -62,14 +63,14 @@
 
 ;;; (change-level (aref (meters *test*) 0) (random 100)
 
-(defun meter-gui (&key (num 2) node-id)
+(defun meter-gui (&key (num 2) (window-title "Meters") node-id)
   (with-controller ()
-    (q+:show (make-instance 'levelmeter-main :num num :node-id node-id))))
+    (q+:show (make-instance 'levelmeter-main :window-title window-title :num num :node-id node-id))))
 
 ;;; (meter-gui :num 16)
 
 (define-override (levelmeter-main close-event) (ev)
   (declare (ignore ev))
   (incudine:free (node-id levelmeter-main))
-  (format t "closing: ~a" levelmeter-main)
+;;  (format t "closing: ~a" levelmeter-main)
   (call-next-qmethod))
