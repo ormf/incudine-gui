@@ -49,14 +49,34 @@ body)
   function)
 
 (defun gui-start ()
-  (incudine::with-new-thread (*gui-thread* "gui-thread" *gui-priority*
-                              "GUI thread started")
-    (setf *gui-event* nil)
-    ;; (qt-init)
-    (loop (incudine::sync-condition-wait *gui-sync*)
-          (when (eq (first *gui-event*) 'run)
-            (funcall (second *gui-event*))
-            (setf *gui-event* nil))))
-  (sleep .1)
-  (gui-funcall #'init-controller)
-  (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
+  (if incudine.util:*rt-thread*
+      (progn
+        (incudine::with-new-thread (*gui-thread* "gui-thread" *gui-priority*
+                                                 "GUI thread started")
+          (setf *gui-event* nil)
+          ;; (qt-init)
+          (loop (incudine::sync-condition-wait *gui-sync*)
+             (when (eq (first *gui-event*) 'run)
+               (funcall (second *gui-event*))
+               (setf *gui-event* nil))))
+        (sleep .1)
+        (gui-funcall #'init-controller)
+        (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
+      (warn "Couldn't start Gui. Please evaluate (incudine:rt-start) first!")))
+
+;;; (gui-start)
+
+(defun gui-start-thread-only ()
+  (if incudine.util:*rt-thread*
+      (progn
+        (incudine::with-new-thread (*gui-thread* "gui-thread" *gui-priority*
+                                                 "GUI thread started")
+          (setf *gui-event* nil)
+          ;; (qt-init)
+          (loop (incudine::sync-condition-wait *gui-sync*)
+             (when (eq (first *gui-event*) 'run)
+               (funcall (second *gui-event*))
+               (setf *gui-event* nil))))
+        (sleep .1)
+        (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
+      (warn "Couldn't start Gui. Please evaluate (incudine:rt-start) first!")))
