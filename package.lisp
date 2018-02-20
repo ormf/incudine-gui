@@ -5,7 +5,7 @@
 (defpackage #:incudine-gui
   (:nicknames #:cuda-gui)
   (:use #:cl+qt)
-  (:export #:INIT-CONTROLLER
+  (:export #:GUI-START
            #:METER-GUI
            #:METERS
            #:*TEST*

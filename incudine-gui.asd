@@ -11,7 +11,7 @@
                #:qtools
                #:qtcore #:qtgui)
   :components ((:file "package")
-               (:file "qtools-controller")
+               (:file "gui-startup")
                (:file "levelmeter-gui")
                (:file "levelmeter-incudine")))
 

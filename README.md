@@ -41,11 +41,12 @@ To load "incudine-gui":
 
 ..........
 ("incudine-gui")
-CL-USER> (cuda-gui:init-controller)
+CL-USER> (cuda-gui:gui-start)
+:STARTED
 CL-USER> (in-package :scratch)
 #<PACKAGE "INCUDINE.SCRATCH">
 SCRATCH> (rt-start)
 :STARTED
-SCRATCH> (meteor :num 8)
+SCRATCH> (meter :num 8)
 ; No value
 ```
