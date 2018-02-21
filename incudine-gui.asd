@@ -12,6 +12,7 @@
                #:qtcore #:qtgui)
   :components ((:file "package")
                (:file "gui-startup")
+               (:file "gui-registry")
                (:file "levelmeter-gui")
                (:file "levelmeter-incudine")))
 

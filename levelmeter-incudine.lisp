@@ -97,6 +97,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
         (setf count 0)))))
 |#
 
+#|
 (define-vug levelmeter (in freq (idx channel-number))
   (with ((sum 0)
          (count 0)
@@ -118,9 +119,32 @@ The alternative is a foreign *GUI-BUS-POINTER*:
               value)))
         (setf sum +sample-zero+)
         (setf count 0)))))
+|#
+
+(define-vug levelmeter (in freq (meter incudine-gui::levelmeter))
+  (with ((sum 0)
+         (count 0)
+         (max (round-sample (/ *sample-rate* freq)))
+         (value 0))
+    (declare (sample sum) (fixnum count max value))
+    (prog1 count
+      (incf count)
+      (incf sum (* in in))
+      (when (>= count max)
+        (setf value
+              (round-sample
+                (+ 100 (lin->db
+                         (sqrt (the non-negative-sample (/ sum count)))))))
+        (nrt-funcall
+          (lambda ()
+            (cuda-gui:change-level meter value)))
+        (setf sum +sample-zero+)
+        (setf count 0)))))
+
+#|
 
 
-(dsp! stereometer (freq (chan channel-number))
+(dsp! stereometer (freq (gui incudine-gui::levelmeter-main) (chan channel-number))
   (:defaults 10 0)
   (levelmeter (audio-in chan) freq chan)
   (levelmeter (audio-in (1+ chan)) freq (1+ chan)))
@@ -129,3 +153,5 @@ The alternative is a foreign *GUI-BUS-POINTER*:
   (let ((node-id (next-node-id)))
     (cuda-gui:meter-gui :num num :node-id node-id :window-title window-title)
     (stereometer freq 0 :id node-id)))
+
+|#
