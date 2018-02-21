@@ -37,9 +37,14 @@ body)
 
 (defun init-controller ()
   (with-main-window
-      (controller 'controller
-                  :show NIL :main-thread T
-                  :blocking NIL)
+      #+darwin (controller 'controller
+                           :show NIL
+                           :main-thread T
+                           :blocking NIL)
+      #-darwin (controller 'controller
+                           :show NIL
+                           :main-thread NIL
+                           :blocking NIL)
     (q+:qapplication-set-quit-on-last-window-closed NIL)
     (setf *controller* controller)))
 
@@ -66,6 +71,7 @@ body)
 
 ;;; (gui-start)
 
+#|
 (defun gui-start-thread-only ()
   (if incudine.util:*rt-thread*
       (progn
@@ -80,3 +86,4 @@ body)
         (sleep .1)
         (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
       (warn "Couldn't start Gui. Please evaluate (incudine:rt-start) first!")))
+|#
