@@ -8,8 +8,10 @@
 (defparameter *test* nil)
 
 (define-widget levelmeter-main (QWidget)
-  ((window-title :initform "Meters" :initarg :window-title :accessor window-title)
-   (node-id :initarg :node-id :accessor node-id)
+  ((id :initform "Meters" :initarg :id :accessor id)
+   (window-title)
+   (gui-signal :initform nil :initarg :gui-signal :accessor gui-signal)
+   (node-ids :initarg :node-ids :accessor node-ids)
    (num :initform 2 :initarg :num :accessor num)
    (meters :initarg :meters :accessor meters)))
 
@@ -44,10 +46,12 @@
           (q+:add-widget layout meter))))
 
 (define-initializer (levelmeter-main setup)
-  (setf (q+:window-title levelmeter-main) window-title)
+  (setf (q+:window-title levelmeter-main) (format nil "~s" id))
   (q+:set-style-sheet levelmeter-main "background-color: #202020;")
   (q+:set-geometry levelmeter-main 50 50 (* num 25) 400)
-  (setf *test* levelmeter-main))
+  (if (and (add-gui id levelmeter-main)
+           (gui-signal levelmeter-main))
+      (incudine::sync-condition-signal *from-gui-sync*)))
 
 (define-signal (levelmeter set-level) (int))
 
@@ -63,14 +67,28 @@
 
 ;;; (change-level (aref (meters *test*) 0) (random 100)
 
-(defun meter-gui (&key (num 2) (window-title "Meters") node-id)
-  (with-controller ()
-    (q+:show (make-instance 'levelmeter-main :window-title window-title :num num :node-id node-id))))
+(defun meter-gui (&key (num 2) (id "Meters") node-ids)
+  (unwind-protect 
+       (with-controller ()
+         (q+:show (make-instance 'levelmeter-main :id id :num num :node-ids node-ids :gui-signal t)))
+)
+  (incudine::sync-condition-wait *from-gui-sync*)
+  (find-gui id))
 
-;;; (meter-gui :num 16)
+;;; (meter-gui :num 8 :id "Meters")
+
+;;; (meter-gui :num 8 :id "Meters02")
+;;;(find-gui "Meters02")
+
+
+#|
+(let ((num 2) (id "Meters") node-ids)
+  (make-instance 'levelmeter-main :id id :num num :node-ids node-ids))
+|#
 
 (define-override (levelmeter-main close-event) (ev)
   (declare (ignore ev))
-  (incudine:free (node-id levelmeter-main))
+  (dolist (id (node-ids levelmeter-main)) (incudine:free id))
 ;;  (format t "closing: ~a" levelmeter-main)
+  (remove-gui id)
   (call-next-qmethod))

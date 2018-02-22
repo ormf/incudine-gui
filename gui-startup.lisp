@@ -30,8 +30,12 @@ body)
 (defvar *gui-priority* incudine.config:*nrt-priority*)
 (declaim (type fixnum *gui-priority*))
 
-(defvar *gui-sync* (incudine::make-sync-condition "gui"))
-(declaim (type incudine::sync-condition *gui-sync*))
+(defvar *to-gui-sync* (incudine::make-sync-condition "to-gui"))
+(declaim (type incudine::sync-condition *to-gui-sync*))
+
+(defvar *from-gui-sync* (incudine::make-sync-condition "from-gui"))
+(declaim (type incudine::sync-condition *from-gui-sync*))
+
 
 (defvar *gui-event* nil)
 
@@ -50,7 +54,7 @@ body)
 
 (defun gui-funcall (function)
   (setf *gui-event* (list 'run function))
-  (incudine::sync-condition-signal *gui-sync*)
+  (incudine::sync-condition-signal *to-gui-sync*)
   function)
 
 (defun gui-start ()
@@ -60,7 +64,7 @@ body)
                                                  "GUI thread started")
           (setf *gui-event* nil)
           ;; (qt-init)
-          (loop (incudine::sync-condition-wait *gui-sync*)
+          (loop (incudine::sync-condition-wait *to-gui-sync*)
              (when (eq (first *gui-event*) 'run)
                (funcall (second *gui-event*))
                (setf *gui-event* nil))))

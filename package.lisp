@@ -8,6 +8,7 @@
   (:export #:GUI-START
            #:METER-GUI
            #:METERS
+           #:NODE-IDS
            #:*TEST*
            #:CHANGE-LEVEL))
 

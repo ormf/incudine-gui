@@ -13,6 +13,8 @@
 
 (defvar *guis* (make-hash-table :test #'equal))
 
+;; (define-condition )
+
 (defun add-gui (id gui &key (db *guis*))
   (if (gethash id db)
       (error "gui ~s already exists!" id)
