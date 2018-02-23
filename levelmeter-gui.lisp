@@ -1,4 +1,4 @@
-;;;; levlemeter-gui.lisp
+;;;; levelmeter-gui.lisp
 ;;;;
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
@@ -70,8 +70,7 @@
 (defun meter-gui (&key (num 2) (id "Meters") node-ids)
   (unwind-protect 
        (with-controller ()
-         (q+:show (make-instance 'levelmeter-main :id id :num num :node-ids node-ids :gui-signal t)))
-)
+         (q+:show (make-instance 'levelmeter-main :id id :num num :node-ids node-ids :gui-signal t))))
   (incudine::sync-condition-wait *from-gui-sync*)
   (find-gui id))
 

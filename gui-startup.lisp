@@ -36,6 +36,9 @@ body)
 (defvar *from-gui-sync* (incudine::make-sync-condition "from-gui"))
 (declaim (type incudine::sync-condition *from-gui-sync*))
 
+(defvar *widget-finalized-sync* (incudine::make-sync-condition "widget-finalized"))
+(declaim (type incudine::sync-condition *widget-finalized-sync*))
+
 
 (defvar *gui-event* nil)
 
