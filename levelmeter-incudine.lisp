@@ -3,7 +3,6 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:scratch)
-
 (export 'meters :scratch)
 
 (declaim (inline round-sample))
@@ -150,13 +149,16 @@ The alternative is a foreign *GUI-BUS-POINTER*:
   (:defaults 10 nil 0 0)
   (levelmeter (audio-in chan) freq (svref (incudine-gui::meters gui) gui-idx)))
 
+#|
 (dsp! multimeter (freq (gui incudine-gui::levelmeter-main) (num fixnum) (chan channel-number))
-  (:defaults 10 (make-instance 'cuda-gui::levelmeter-main) 0 0)
+  (:defaults 10 nil 0 0)
   (dotimes (count num)
     (levelmeter (audio-in (+ count chan)) freq (svref (incudine-gui::meters gui) count))))
+|#
 
 (defun meters (&key (num 2) (id "Meters") (freq 5) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
+    (format t "~&Gui: ~a~%" gui)
     (loop
        for idx below num
        with node-id = (next-node-id)
@@ -165,35 +167,5 @@ The alternative is a foreign *GUI-BUS-POINTER*:
             (push (+ idx node-id) (cuda-gui:node-ids gui))))))
 
 #|
-(cuda-gui:meter-gui :num 8 :node-ids '() :id "Meters")
-;;; (setf cuda-gui::*test* (cuda-gui:meter-gui :num 2 :node-ids '() :window-title "Meters"))
-
-(setf *test* nil)
-;;;    (stereometer 10 cuda-gui::*test* 0 :id 1)
-
-(slot-value cuda-gui::*test* :node-id)
-
 (meters :num 8 :id "meters01")
-
-(dump (node 0))
-
-(cuda-gui::find-gui "Meters")
-
-(dump (node 0))
-(monometer 10 (cuda-gui::find-gui "Meters") 0 0)
-(monometer 10 (cuda-gui::find-gui "Meters") 1 1)
-
-(cuda-gui:meter-gui :num 8 :node-id 1 :window-title "Test")
-
-(dsp! stereometer (freq (gui incudine-gui::levelmeter-main) (chan channel-number))
-  (:defaults 10 0)
-  (levelmeter (audio-in chan) freq chan)
-  (levelmeter (audio-in (1+ chan)) freq (1+ chan)))
-
-(defun meters (&key (num 2) (window-title "Meters") (freq 5))
-  (let* ((node-id (next-node-id))
-         (gui (cuda-gui:meter-gui :num num :node-id node-id :window-title window-title)))
-
-    (stereometer freq gui :id node-id)))
-
 |#

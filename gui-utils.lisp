@@ -11,3 +11,9 @@
   (cond
     ((keywordp title) (string-downcase (format nil "~s" title)))
     (:else (format nil "~a" title))))
+
+(defun start ()
+  (incudine:rt-start)
+  (sleep 0.5)
+  (gui-start)
+  (in-package :scratch)) 

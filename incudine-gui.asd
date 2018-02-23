@@ -12,6 +12,7 @@
                #:qtcore #:qtgui)
   :components ((:file "package")
                (:file "globals")
+               (:file "gui-utils")
                (:file "gui-startup")
                (:file "gui-registry")
                (:file "gui-class")
