@@ -214,9 +214,8 @@ The alternative is a foreign *GUI-BUS-POINTER*:
    (:defaults 10 nil 0 0)
    (levelmeter (audio-in chan) freq (svref (incudine-gui::meters gui) gui-idx)))
 
-(defun meters (&key (num 2) (id "Meters") (freq 10) (periods 2) (audio-bus 0))
+(defun env-meters (&key (num 2) (id "Meters") (freq 10) (periods 2) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
-    (format t "~&Gui: ~a~%" gui)
     (loop
        for idx below num
        with node-id = (next-node-id)
@@ -224,15 +223,24 @@ The alternative is a foreign *GUI-BUS-POINTER*:
             (env-monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) periods :id (+ idx node-id))
             (push (+ idx node-id) (cuda-gui:node-ids gui))))))
 
-
+(defun meters (&key (num 2) (id "Meters") (freq 10) (periods 2) (audio-bus 0))
+  (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
+    (loop
+       for idx below num
+       with node-id = (next-node-id)
+       do (progn
+            (env-monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) periods :id (+ idx node-id))
+            (push (+ idx node-id) (cuda-gui:node-ids gui))))))
 
 #|
 (free 0)
 
-(meters :num 8 :id "meters01" :freq 10 :periods 1)
-(meters :num 8 :id "meters02" :freq 10 :periods 2)
-(meters :num 8 :id "meters03" :freq 10 :periods 4)
-(meters :num 8 :id "meters04" :freq 20 :periods 4)
+(dump (node 0))
+
+(env-meters :num 8 :id "meters01" :freq 10 :periods 1)
+(env-meters :num 8 :id "meters02" :freq 10 :periods 2)
+(env-meters :num 16 :id "meters03" :freq 10 :periods 4)
+(env-meters :num 16 :id "meters04" :freq 20 :periods 4)
 
 |#
 
