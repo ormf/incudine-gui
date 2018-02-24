@@ -76,7 +76,9 @@
 
 (define-override (levelmeter-main close-event) (ev)
   (declare (ignore ev))
-  (dolist (id (node-ids levelmeter-main)) (incudine:free id))
-;;  (format t "closing: ~a" levelmeter-main)
+  (dolist (id (node-ids levelmeter-main))
+    (format t "removing: ~a" id)
+    (incudine:nrt-funcall (lambda () (incudine:free id))))
+  (format t "closing: ~a" levelmeter-main)
   (remove-gui (id levelmeter-main))
   (call-next-qmethod))

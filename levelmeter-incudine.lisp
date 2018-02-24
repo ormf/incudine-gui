@@ -10,7 +10,8 @@
 (defun round-sample (x)
   (declare (type (sample
                   #.(coerce (ash most-negative-fixnum -1) 'sample)
-                  #.(coerce (ash most-positive-fixnum -1) 'sample)) x))
+                  #.(coerce (ash most-positive-fixnum -1) 'sample))
+                 x))
   (multiple-value-bind (result rem) (round x)
     (declare (ignore rem))
     result))
@@ -118,7 +119,36 @@ The alternative is a foreign *GUI-BUS-POINTER*:
               value)))
         (setf sum +sample-zero+)
         (setf count 0)))))
+
+(dotimes (i periods)
+  (incf (aref sums i) (* in in (buffer-value hanning (aref bufidx i))))
+  (if (> (incf (aref bufidx i)) size)
+      (prog1
+          (output-value (sqrt (aref sums i)))
+        (setf (aref bufidx i) 0)
+        (setf (aref sums i) +sample-zero+))))
 |#
+
+(defun hanning ()
+  (lambda (c-array size)
+    (declare (type foreign-pointer c-array) (type non-negative-fixnum size))
+    (with-foreign-array (tmp 'sample)
+      (with-samples (value abs-value (max 0.0))
+        (dotimes (i size)
+          (setf (smp-ref c-array i)
+                (* 0.5 (- 1 (cos (* 2 pi (/ i (1- size))))))))
+        (values c-array nil nil)))))
+
+(defun hanning-rms ()
+  "(/ size) weighted version of (* 2 hanning)"
+  (lambda (c-array size)
+    (declare (type foreign-pointer c-array) (type non-negative-fixnum size))
+    (with-foreign-array (tmp 'sample)
+      (with-samples (value abs-value (max 0.0))
+        (dotimes (i size)
+          (setf (smp-ref c-array i)
+                (/ (- 1 (cos (* 2 pi (/ i (1- size))))) size)))
+        (values c-array nil nil)))))
 
 (define-vug levelmeter (in freq (meter incudine-gui::levelmeter))
   (with ((sum 0)
@@ -140,32 +170,69 @@ The alternative is a foreign *GUI-BUS-POINTER*:
         (setf sum +sample-zero+)
         (setf count 0)))))
 
-(dsp! stereometer (freq (gui incudine-gui::levelmeter-main) (chan channel-number))
-  (:defaults 10 nil 0)
-  (levelmeter (audio-in chan) freq (svref (incudine-gui::meters gui) 0))
-  (levelmeter (audio-in (1+ chan)) freq (svref (incudine-gui::meters gui) 1)))
+(defun make-idx-array (periods size)
+  (let ((idx-array
+         (make-array periods :adjustable nil :element-type 'channel-number :initial-element 0)))
+     (dotimes (i periods)
+       (setf (aref idx-array i) (round (* i (/ size periods)))))
+     idx-array))
+
+
+
+(define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter) (periods channel-number))
+  (:defaults +sample-zero+ 10 nil 2)
+  (with ((size (round-sample (/ (* periods *sample-rate*) freq)))
+         (hanning (make-buffer (1+ size) :fill-function (hanning-rms)))
+         (sums (make-array periods :adjustable nil :element-type 'sample :initial-element +sample-zero+))
+         (bufidx (make-array periods :adjustable nil :element-type 'channel-number :initial-contents
+                             (coerce (loop for i below periods
+                                        collect (the channel-number (floor (* i (round (/ size periods))))))
+                    '(SIMPLE-ARRAY channel-number (*)))))
+         (max +sample-zero+)
+         (value 0))
+    (declare  (fixnum size value) (sample max))
+    (dotimes (i periods)
+      (incf (aref sums i) (* in in (buffer-value hanning (aref bufidx i))))
+      (when (>= (incf (aref bufidx i)) size)
+        (progn
+          (setf value
+                (round-sample
+                 (+ 100 (lin->db
+                         (sqrt (the non-negative-sample (aref sums i)))))))
+          (nrt-funcall
+           (lambda ()
+             (cuda-gui:change-level meter value)))
+          (setf (aref sums i) +sample-zero+)
+          (setf (aref bufidx i) 0))))))
+
+(dsp! env-monometer ((freq fixnum) (gui incudine-gui::levelmeter) (chan channel-number)
+                     (periods channel-number))
+   (:defaults 10 nil 0 2)
+   (env-levelmeter (audio-in chan) freq gui periods))
 
 (dsp! monometer (freq (gui incudine-gui::levelmeter-main) (chan channel-number) (gui-idx channel-number))
-  (:defaults 10 nil 0 0)
-  (levelmeter (audio-in chan) freq (svref (incudine-gui::meters gui) gui-idx)))
+   (:defaults 10 nil 0 0)
+   (levelmeter (audio-in chan) freq (svref (incudine-gui::meters gui) gui-idx)))
 
-#|
-(dsp! multimeter (freq (gui incudine-gui::levelmeter-main) (num fixnum) (chan channel-number))
-  (:defaults 10 nil 0 0)
-  (dotimes (count num)
-    (levelmeter (audio-in (+ count chan)) freq (svref (incudine-gui::meters gui) count))))
-|#
-
-(defun meters (&key (num 2) (id "Meters") (freq 5) (audio-bus 0))
+(defun meters (&key (num 2) (id "Meters") (freq 10) (periods 2) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
     (format t "~&Gui: ~a~%" gui)
     (loop
        for idx below num
        with node-id = (next-node-id)
        do (progn
-            (monometer freq gui (+ audio-bus idx) idx :id (+ idx node-id))
+            (env-monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) periods :id (+ idx node-id))
             (push (+ idx node-id) (cuda-gui:node-ids gui))))))
 
+
+
 #|
-(meters :num 8 :id "meters01")
+(free 0)
+
+(meters :num 8 :id "meters01" :freq 10 :periods 1)
+(meters :num 8 :id "meters02" :freq 10 :periods 2)
+(meters :num 8 :id "meters03" :freq 10 :periods 4)
+(meters :num 8 :id "meters04" :freq 20 :periods 4)
+
 |#
+

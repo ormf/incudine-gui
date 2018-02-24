@@ -93,4 +93,7 @@ body)
         (sleep .1)
         (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
       (warn "Couldn't start Gui. Please evaluate (incudine:rt-start) first!")))
+
+  (incudine::sync-condition-signal *widget-finalized-sync*)
+
 |#
