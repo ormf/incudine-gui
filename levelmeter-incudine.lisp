@@ -179,56 +179,63 @@ The alternative is a foreign *GUI-BUS-POINTER*:
 
 
 
-(define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter) (hop-size channel-number))
+(define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter)
+                            (periods channel-number))
   (:defaults +sample-zero+ 10 nil 2)
-  (with ((size (round-sample (/ (* hop-size *sample-rate*) freq)))
-         (hanning (make-buffer (1+ size) :fill-function (hanning-rms)))
-         (sums (make-array hop-size :adjustable nil :element-type 'sample :initial-element +sample-zero+))
-         (bufidx (make-array hop-size :adjustable nil :element-type 'channel-number :initial-contents
-                             (coerce (loop for i below hop-size
-                                        collect (the channel-number (floor (* i (round (/ size hop-size))))))
-                    '(SIMPLE-ARRAY channel-number (*)))))
+  (with ((size (round-sample (/ (* periods *sample-rate*) freq)))
+         (hanning (make-local-buffer (1+ size) :fill-function (hanning-rms)))
+         (sums (make-frame periods :zero-p t))
+         (bufidx (make-array periods :element-type 'channel-number))
          (max +sample-zero+)
          (value 0))
     (declare  (fixnum size value) (sample max))
-    (dotimes (i hop-size)
-      (incf (aref sums i) (* in in (buffer-value hanning (aref bufidx i))))
+    (initialize
+      (dotimes (i periods)
+        (setf (aref bufidx i)
+              (reduce-warnings (floor (* i (round (/ size periods))))))))
+    (dotimes (i periods)
+      (incf (smp-ref sums i) (* in in (buffer-value hanning (aref bufidx i))))
       (when (>= (incf (aref bufidx i)) size)
         (progn
           (setf value
                 (round-sample
-                 (+ 100 (lin->db
-                         (sqrt (the non-negative-sample (aref sums i)))))))
+                  (+ 100 (lin->db
+                          (sqrt (the non-negative-sample (smp-ref sums i)))))))
           (nrt-funcall
-           (lambda ()
-             (cuda-gui:change-level meter value)))
-          (setf (aref sums i) +sample-zero+)
+            (lambda ()
+              (cuda-gui:change-level meter value)))
+          (setf (smp-ref sums i) +sample-zero+)
           (setf (aref bufidx i) 0))))))
 
 (dsp! env-monometer ((freq fixnum) (gui incudine-gui::levelmeter) (chan channel-number)
                      (hop-size channel-number))
    (:defaults 10 nil 0 2)
    (env-levelmeter (audio-in chan) freq gui hop-size))
-
-(dsp! monometer (freq (gui incudine-gui::levelmeter-main) (chan channel-number) (gui-idx channel-number))
-   (:defaults 10 nil 0 0)
-   (levelmeter (audio-in chan) freq (svref (incudine-gui::meters gui) gui-idx)))
-
  
-
 (defun meters (&key (num 2) (id "Meters") (freq 10) (hop-size 2) (audio-bus 0))
+  (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
+    (dotimes (idx num)
+      (env-monometer freq (svref (incudine-gui::meters gui) idx)
+                     (+ audio-bus idx) hop-size
+                     :action (lambda (n)
+                               (push (node-id n)
+                                     (cuda-gui:node-ids gui)))))))
+
+#|
+
+(dsp! monometer (freq (gui incudine-gui::levelmeter) (chan channel-number) (gui-idx channel-number))
+   (:defaults 10 nil 0 0)
+   (levelmeter (audio-in chan) freq gui))
+
+(defun meters (&key (num 2) (id "Meters") (freq 10) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
     (loop
        for idx below num
-       with node-id = (next-node-id)
        do (progn
-            (env-monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) hop-size :id (+ idx node-id))
-            (push (+ idx node-id) (cuda-gui:node-ids gui))))))
-
-#|
-(free 0)
-
-(dump (node 0))
+            (monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) idx)
+            :action (lambda (n)
+                      (push (node-id n)
+                            (cuda-gui:node-ids gui)))))))
 
 (env-meters :num 8 :id "meters01" :freq 10 :hop-size 1)
 (env-meters :num 8 :id "meters02" :freq 10 :hop-size 2)
