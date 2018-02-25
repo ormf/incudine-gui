@@ -96,7 +96,7 @@
   (declare (ignore ev))
   (dolist (id (node-ids levelmeter-main))
     (format t "~&removing: ~a~%" id)
-    (incudine:nrt-funcall (lambda () (incudine:free id))))
+    (incudine:free id))
   (format t "~&closing: ~a" levelmeter-main)
   (remove-gui (id levelmeter-main))
   (call-next-qmethod))

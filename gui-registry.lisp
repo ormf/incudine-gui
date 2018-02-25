@@ -26,15 +26,3 @@
 
 (defun find-gui (id &key (db *guis*))
   (gethash id db))
-
-#|
-
-(add-gui "test" 'Hallo)
-(add-gui :test 'Hallo)
-(find-gui :TEST)
-(find-gui "test")
-
-(remove-gui :test)
-(remove-gui "test")
-
-|#

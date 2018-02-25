@@ -34,4 +34,3 @@ return it. id has to be unique among all toplevel widgets."
     (q+:show (apply #'make-instance widget-class :gui-signal t :id id args)))
   (incudine::sync-condition-wait *widget-finalized-sync*)
   (find-gui id))
-

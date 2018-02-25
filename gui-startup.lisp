@@ -54,35 +54,51 @@ body)
     (q+:qapplication-set-quit-on-last-window-closed NIL)
     (setf *controller* controller)))
 
+
 (defun gui-funcall (function)
   (setf *gui-event* (list 'run function))
   (incudine::sync-condition-signal *to-gui-sync*)
   function)
 
 (defun gui-start ()
-  (if incudine.util:*rt-thread*
-      (progn
-        (incudine::with-new-thread (*gui-thread* "gui-thread" *gui-priority*
-                                                 "GUI thread started")
-          (setf *gui-event* nil)
-          ;; (qt-init)
-          (init-controller)
-          (loop (incudine::sync-condition-wait *to-gui-sync*)
-             (when (eq (first *gui-event*) 'run)
-               (funcall (second *gui-event*))
-               (setf *gui-event* nil))))
-        (sleep .1)
-        (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
-      (warn "Couldn't start Gui. Please evaluate (incudine:rt-start) first!")))
+  (if (and *gui-thread* (bt:thread-alive-p *gui-thread*))
+      :started
+      (if incudine.util:*rt-thread*
+          (progn
+            (incudine::with-new-thread (*gui-thread* "gui-thread" *gui-priority*
+                                                     "GUI thread started")
+              (setf *gui-event* nil)
+              ;; (qt-init)
+              (init-controller)
+              (loop (incudine::sync-condition-wait *to-gui-sync*)
+                 (when (eq (first *gui-event*) 'run)
+                   (funcall (second *gui-event*))
+                   (setf *gui-event* nil))))
+            (sleep .1)
+            (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
+          (warn "Couldn't start Gui. Please evaluate (incudine:rt-start) first!"))))
 
 (defun gui-stop ()
   (maphash (lambda (id gui) (declare (ignore id))
               (gui-funcall (q+:close gui)))
            *guis*)
-  (bt:destroy-thread *gui-thread*)
-  (setf *gui-thread* nil))
+;;;  (gui-funcall (q+:quit *qapplication*))
+;;;  (bt:destroy-thread *gui-thread*)
+;;;  (setf *controller* nil)
+;;;  (setf *gui-thread* nil)
+  :stopped
+  )
+
 
 #|
+;;; (gui-funcall (q+:quit *qapplication*))
+;;; (q+:quit *qapplication*)
+;;; (setf *qapplication* nil)
+;;; (setf *controller* nil)
+(gui-start)
+(init-controller)
+(gui-stop)
+
 (defun gui-start-thread-only ()
   (if incudine.util:*rt-thread*
       (progn
