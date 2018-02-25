@@ -42,17 +42,19 @@ body)
 (defvar *gui-event* nil)
 
 (defun init-controller ()
-  (with-main-window
-      #+darwin (controller 'controller
-                           :show NIL
-                           :main-thread T
-                           :blocking NIL)
-      #-darwin (controller 'controller
-                           :show NIL
-                           :main-thread NIL
-                           :blocking NIL)
-    (q+:qapplication-set-quit-on-last-window-closed NIL)
-    (setf *controller* controller)))
+  (if *controller*
+      (warn "Controller already initialized.")
+      (with-main-window
+          #+darwin (controller 'controller
+                               :show NIL
+                               :main-thread T
+                               :blocking NIL)
+          #-darwin (controller 'controller
+                               :show NIL
+                               :main-thread NIL
+                               :blocking NIL)
+          (q+:qapplication-set-quit-on-last-window-closed NIL)
+          (setf *controller* controller))))
 
 
 (defun gui-funcall (function)
