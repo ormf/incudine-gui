@@ -39,7 +39,6 @@ body)
 (defvar *widget-finalized-sync* (incudine::make-sync-condition "widget-finalized"))
 (declaim (type incudine::sync-condition *widget-finalized-sync*))
 
-
 (defvar *gui-event* nil)
 
 (defun init-controller ()

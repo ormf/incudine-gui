@@ -120,7 +120,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
         (setf sum +sample-zero+)
         (setf count 0)))))
 
-(dotimes (i periods)
+(dotimes (i hop-size)
   (incf (aref sums i) (* in in (buffer-value hanning (aref bufidx i))))
   (if (> (incf (aref bufidx i)) size)
       (prog1
@@ -170,28 +170,28 @@ The alternative is a foreign *GUI-BUS-POINTER*:
         (setf sum +sample-zero+)
         (setf count 0)))))
 
-(defun make-idx-array (periods size)
+(defun make-idx-array (hop-size size)
   (let ((idx-array
-         (make-array periods :adjustable nil :element-type 'channel-number :initial-element 0)))
-     (dotimes (i periods)
-       (setf (aref idx-array i) (round (* i (/ size periods)))))
+         (make-array hop-size :adjustable nil :element-type 'channel-number :initial-element 0)))
+     (dotimes (i hop-size)
+       (setf (aref idx-array i) (round (* i (/ size hop-size)))))
      idx-array))
 
 
 
-(define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter) (periods channel-number))
+(define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter) (hop-size channel-number))
   (:defaults +sample-zero+ 10 nil 2)
-  (with ((size (round-sample (/ (* periods *sample-rate*) freq)))
+  (with ((size (round-sample (/ (* hop-size *sample-rate*) freq)))
          (hanning (make-buffer (1+ size) :fill-function (hanning-rms)))
-         (sums (make-array periods :adjustable nil :element-type 'sample :initial-element +sample-zero+))
-         (bufidx (make-array periods :adjustable nil :element-type 'channel-number :initial-contents
-                             (coerce (loop for i below periods
-                                        collect (the channel-number (floor (* i (round (/ size periods))))))
+         (sums (make-array hop-size :adjustable nil :element-type 'sample :initial-element +sample-zero+))
+         (bufidx (make-array hop-size :adjustable nil :element-type 'channel-number :initial-contents
+                             (coerce (loop for i below hop-size
+                                        collect (the channel-number (floor (* i (round (/ size hop-size))))))
                     '(SIMPLE-ARRAY channel-number (*)))))
          (max +sample-zero+)
          (value 0))
     (declare  (fixnum size value) (sample max))
-    (dotimes (i periods)
+    (dotimes (i hop-size)
       (incf (aref sums i) (* in in (buffer-value hanning (aref bufidx i))))
       (when (>= (incf (aref bufidx i)) size)
         (progn
@@ -206,30 +206,23 @@ The alternative is a foreign *GUI-BUS-POINTER*:
           (setf (aref bufidx i) 0))))))
 
 (dsp! env-monometer ((freq fixnum) (gui incudine-gui::levelmeter) (chan channel-number)
-                     (periods channel-number))
+                     (hop-size channel-number))
    (:defaults 10 nil 0 2)
-   (env-levelmeter (audio-in chan) freq gui periods))
+   (env-levelmeter (audio-in chan) freq gui hop-size))
 
 (dsp! monometer (freq (gui incudine-gui::levelmeter-main) (chan channel-number) (gui-idx channel-number))
    (:defaults 10 nil 0 0)
    (levelmeter (audio-in chan) freq (svref (incudine-gui::meters gui) gui-idx)))
 
-(defun env-meters (&key (num 2) (id "Meters") (freq 10) (periods 2) (audio-bus 0))
-  (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
-    (loop
-       for idx below num
-       with node-id = (next-node-id)
-       do (progn
-            (env-monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) periods :id (+ idx node-id))
-            (push (+ idx node-id) (cuda-gui:node-ids gui))))))
+ 
 
-(defun meters (&key (num 2) (id "Meters") (freq 10) (periods 2) (audio-bus 0))
+(defun meters (&key (num 2) (id "Meters") (freq 10) (hop-size 2) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
     (loop
        for idx below num
        with node-id = (next-node-id)
        do (progn
-            (env-monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) periods :id (+ idx node-id))
+            (env-monometer freq (svref (incudine-gui::meters gui) idx) (+ audio-bus idx) hop-size :id (+ idx node-id))
             (push (+ idx node-id) (cuda-gui:node-ids gui))))))
 
 #|
@@ -237,10 +230,10 @@ The alternative is a foreign *GUI-BUS-POINTER*:
 
 (dump (node 0))
 
-(env-meters :num 8 :id "meters01" :freq 10 :periods 1)
-(env-meters :num 8 :id "meters02" :freq 10 :periods 2)
-(env-meters :num 16 :id "meters03" :freq 10 :periods 4)
-(env-meters :num 16 :id "meters04" :freq 20 :periods 4)
+(env-meters :num 8 :id "meters01" :freq 10 :hop-size 1)
+(env-meters :num 8 :id "meters02" :freq 10 :hop-size 2)
+(env-meters :num 16 :id "meters03" :freq 10 :hop-size 4)
+(env-meters :num 16 :id "meters04" :freq 20 :hop-size 4)
 
 |#
 
