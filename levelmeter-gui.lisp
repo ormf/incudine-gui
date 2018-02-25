@@ -62,8 +62,6 @@
           (setf (aref meters idx) meter)
           (q+:add-widget layout meter))))
 
-
-
 (define-signal (levelmeter set-level) (int))
 
 (define-slot (levelmeter set-level) ((value int))

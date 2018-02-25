@@ -212,7 +212,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
    (:defaults 10 nil 0 2)
    (env-levelmeter (audio-in chan) freq gui hop-size))
  
-(defun meters (&key (num 2) (id "Meters") (freq 10) (hop-size 2) (audio-bus 0))
+(defun meters (&key (num *number-of-input-bus-channels*) (id "Meters") (freq 10) (hop-size 2) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
     (dotimes (idx num)
       (env-monometer freq (svref (incudine-gui::meters gui) idx)
