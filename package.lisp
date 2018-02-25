@@ -6,6 +6,7 @@
   (:nicknames #:cuda-gui)
   (:use #:cl+qt)
   (:export #:GUI-START
+           #:GUI-STOP
            #:METER-GUI
            #:METERS
            #:NODE-IDS
