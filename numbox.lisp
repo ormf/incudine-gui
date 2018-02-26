@@ -14,17 +14,32 @@
    (mouse-start-pos-y :initform 0 :accessor mouse-start-pos-y)
    (mouse-last-y :initform 0 :accessor mouse-last-y)
    (start-value :initform 0 :accessor mouse-start-pos-y)
-   (style :initform "border: 1px solid black; 
+   (style :initform "border: 1px solid #333333; 
 background-color: #ffffff;
 selection-color: red;
 cursor-color: white;
-border-radius: 4px;
+border-radius: 2px;
 selection-background-color: white" :accessor style)))
 
 (defun textedit-parse-integer (str default)
   (if (string/= str "")
       (parse-integer str)
       default))
+
+(define-initializer (numbox setup)
+  (setf decvalidator (q+:make-qintvalidator minval maxval numbox))
+  (q+:set-style-sheet numbox style)
+;;  (q+:set-geometry numbox 50 50 60 30)
+  (q+:set-fixed-width numbox 45)
+  (q+:set-fixed-height numbox 25)
+  (q+:set-alignment numbox (#_AlignCenter "Qt"))
+  (q+:set-text numbox (format nil "~d" minval))
+  (q+:set-read-only numbox t)
+
+;;;  (setf hexvalidator (q+:make-qregexpvalidator (q+:make-qregexp "[0-9A-Fa-f]{1,2}") hexedit))
+;;;  (setf binvalidator (q+:make-qregexpvalidator (q+:make-qregexp "[01]{1,8}") binedit))
+  (q+:set-validator numbox decvalidator)
+  )
 
 (define-override (numbox mouse-press-event) (ev)
   (setf mouse-start-pos-y (q+:y ev))
@@ -60,22 +75,6 @@ selection-background-color: white" :accessor style)))
   (q+:set-read-only numbox t)
   )
 ;;;   
-
-
-(define-initializer (numbox setup)
-  (setf decvalidator (q+:make-qintvalidator minval maxval numbox))
-  (q+:set-style-sheet numbox style)
-;;  (q+:set-geometry numbox 50 50 60 30)
-  (q+:set-fixed-width numbox 60)
-  (q+:set-fixed-height numbox 30)
-  (q+:set-alignment numbox (#_AlignCenter "Qt"))
-  (q+:set-text numbox (format nil "~d" minval))
-  (q+:set-read-only numbox t)
-
-;;;  (setf hexvalidator (q+:make-qregexpvalidator (q+:make-qregexp "[0-9A-Fa-f]{1,2}") hexedit))
-;;;  (setf binvalidator (q+:make-qregexpvalidator (q+:make-qregexp "[01]{1,8}") binedit))
-  (q+:set-validator numbox decvalidator)
-  )
 
 #|
 

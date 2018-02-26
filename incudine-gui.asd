@@ -16,6 +16,9 @@
                (:file "gui-startup")
                (:file "gui-registry")
                (:file "gui-class")
+               (:file "numbox")
+               (:file "scrollbar")
                (:file "levelmeter-gui")
-               (:file "levelmeter-incudine")))
+               (:file "levelmeter-incudine")
+               (:file "stethoscope")))
 
