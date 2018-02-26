@@ -67,6 +67,7 @@ selection-background-color: white" :accessor style)))
 (define-override (numbox mouse-release-event) (ev)
   (setf mouse-pressed nil)
   ;;(q+:set-cursor numbox (#_DragLinkCursor "Qt"))
+  (call-next-qmethod)
   )
 
 (define-override (numbox key-press-event) (ev)
