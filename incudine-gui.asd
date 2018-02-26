@@ -17,6 +17,7 @@
                (:file "gui-registry")
                (:file "gui-class")
                (:file "numbox")
+               (:file "pushbutton")
                (:file "scrollbar")
                (:file "levelmeter-gui")
                (:file "levelmeter-incudine")

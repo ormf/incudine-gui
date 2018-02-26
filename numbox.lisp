@@ -14,7 +14,7 @@
    (mouse-start-pos-y :initform 0 :accessor mouse-start-pos-y)
    (mouse-last-y :initform 0 :accessor mouse-last-y)
    (start-value :initform 0 :accessor mouse-start-pos-y)
-   (style :initform "border: 1px solid #333333; 
+   (style :initform "border: 1px solid #838383; 
 background-color: #ffffff;
 selection-color: red;
 cursor-color: white;

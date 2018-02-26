@@ -5,7 +5,15 @@
 (in-package #:incudine-gui)
 (in-readtable :qtools)
 
+(defvar *scrollbarwidth* 15)
+
 (deftype orientation () '(member :horizontal :vertical))
+
+(define-widget scroll-corner-box (QWidget) ())
+
+(define-initializer (scroll-corner-box setup)
+  (q+:set-fixed-height scroll-corner-box *scrollbarwidth*)
+  (q+:set-fixed-width scroll-corner-box *scrollbarwidth*))
 
 (define-widget scrollbar (QScrollBar)
   ((orientation :initform :horizontal
@@ -16,13 +24,13 @@
     (:vertical
      (progn
        (q+:set-orientation scrollbar (#_Vertical "Qt"))
-       (q+:set-fixed-width scrollbar 15)))
+       (q+:set-fixed-width scrollbar *scrollbarwidth*)))
     (t
      (progn
        (q+:set-orientation scrollbar (#_Horizontal "Qt"))
-       (q+:set-fixed-height scrollbar 15))))
+       (q+:set-fixed-height scrollbar *scrollbarwidth*))))
   (q+:set-style-sheet scrollbar
-                      "border: 1px solid #333333; cursor-color: white; border-radius: 5px; selection-background-color: white")
+                      "border: 2px solid #838383; cursor-color: white; border-radius: 5px; selection-background-color: white")
   (q+:set-minimum scrollbar 0)
   (q+:set-maximum scrollbar 10000))
 
@@ -35,50 +43,83 @@
            (min (q+:minimum scrollbar))
            (prop (float (/ (- (q+:value scrollbar) min)
                            (- max min)))))
+      (q+:set-render-hint painter (#_Antialiasing "QPainter"))
       (q+:erase-rect painter (q+:rect scrollbar))
       (let ((bg-path (q+:make-QPainterPath)))
         (q+:add-Rounded-Rect bg-path (q+:make-qrectf (q+:rect scrollbar)) 5 5)
-        (q+:set-color (q+:pen painter) (q+:make-qcolor 51 51 51 255))
-        (q+:fill-path painter bg-path (q+:make-qbrush (q+:make-qcolor 128 128 128 255)))
+        (q+:set-color (q+:pen painter) (q+:make-qcolor 131 131 131 255))
+        (q+:set-width (q+:pen painter) 2) ;;; border-color of scroll-background
+        (q+:fill-path painter bg-path (q+:make-qbrush (q+:make-qcolor 182 182 182 255))) ;;; background-color of scroll-background
         (q+:draw-path painter bg-path))
-      (let ((thumb-path (q+:make-QPainterPath)))
+      (let ((thumb-path (q+:make-QPainterPath))
+            thumb-line-coords
+            thumb-rect)
         (case (orientation scrollbar)
           (:vertical
-           (let ((val-pos (+ 2 (* prop (- height 4)))))
-             (q+:add-Rounded-Rect thumb-path (q+:make-qrectf
-                                              (q+:make-qrect
-                                               1 (round
-                                                  (cond
-                                                    ((< val-pos 9) 1)
-                                                    ((> val-pos (- height 9)) (- height 19))
-                                                    (t (+ val-pos -9))))
-                                               13 18))
-                                  2 2)
-             (q+:set-color (q+:pen painter) (q+:make-qcolor 51 51 51))
-             (q+:fill-path painter thumb-path (q+:make-qbrush (q+:make-qcolor 255 255 255 255)))
-             (q+:draw-path painter thumb-path)
-             (q+:set-color (q+:pen painter) (q+:make-qcolor 0 0 0 255))
-             (q+:set-width (q+:pen painter) 2)
-             (q+:draw-line painter 3 (round val-pos) 13 (round val-pos))))
+           (let ((val-pos (round (+ 2 (* prop (- height 4))))))
+             (setf thumb-rect `(0 ,(max 1 (- val-pos 10))
+                                  14 ,(+ 9 (min 10 val-pos (- height val-pos)))))
+             (setf thumb-line-coords `(4 ,val-pos 11 ,val-pos))))
           (t
-           (let ((val-pos (+ 2 (* prop (- width 4)))))
-             (q+:add-Rounded-Rect thumb-path (q+:make-qrectf
-                                              (q+:make-qrect
-                                               (round
-                                                  (cond
-                                                    ((< val-pos 9) 1)
-                                                    ((> val-pos (- width 9)) (- width 19))
-                                                    (t (+ val-pos -9))))
-                                               1
-                                               18 13))
-                                  2 2)
-             (q+:set-color (q+:pen painter) (q+:make-qcolor 51 51 51))
-             (q+:fill-path painter thumb-path (q+:make-qbrush (q+:make-qcolor 255 255 255 255)))
-             (q+:draw-path painter thumb-path)
-             (q+:set-color (q+:pen painter) (q+:make-qcolor 0 0 0 255))
-             (q+:set-width (q+:pen painter) 2)
-             (q+:draw-line painter (round val-pos) 3 (round val-pos) 13))))))))
+           (let ((val-pos (round (+ 2 (* prop (- width 4))))))
+             (setf thumb-rect `(,(max 1 (- val-pos 10))
+                                 0 ,(+ 9 (min 10 val-pos (- width val-pos))) 14))
+             (setf thumb-line-coords `(,val-pos 4 ,val-pos 11)))))
+        (q+:add-Rounded-Rect thumb-path (q+:make-qrectf (apply #'q+:make-qrect thumb-rect)) 2 2)
+        (q+:set-color (q+:pen painter) (q+:make-qcolor 153 153 153))
+        (q+:fill-path painter thumb-path (q+:make-qbrush (q+:make-qcolor 255 255 255 255)))
+        (q+:draw-path painter thumb-path)
+        (q+:set-color (q+:pen painter) (q+:make-qcolor 0 0 0 255))
+        (q+:set-width (q+:pen painter) 2)
+        (apply #'q+:draw-line painter thumb-line-coords)))))
+
 #|
+(define-override (scrollbar paint-event) (ev)
+  (declare (ignore ev))
+  (with-finalizing ((painter (q+:make-qpainter scrollbar)))
+    (let* ((width (q+:width scrollbar))
+           (height (q+:height scrollbar))
+           (max (q+:maximum scrollbar))
+           (min (q+:minimum scrollbar))
+           (prop (float (/ (- (q+:value scrollbar) min)
+                           (- max min)))))
+      (q+:set-render-hint painter (#_Antialiasing "QPainter"))
+      (q+:erase-rect painter (q+:rect scrollbar))
+      (let ((bg-path (q+:make-QPainterPath)))
+        (q+:add-Rounded-Rect bg-path (q+:make-qrectf (q+:rect scrollbar)) 5 5)
+        (q+:set-color (q+:pen painter) (q+:make-qcolor 131 131 131 255))
+        (q+:set-width (q+:pen painter) 2) ;;; border-color of scroll-background
+        (q+:fill-path painter bg-path (q+:make-qbrush (q+:make-qcolor 182 182 182 255))) ;;; background-color of scroll-background
+        (q+:draw-path painter bg-path))
+      (let ((thumb-path (q+:make-QPainterPath))
+            thumb-line-coords
+            thumb-rect)
+        (case (orientation scrollbar)
+          (:vertical
+           (let ((val-pos (round (+ 2 (* prop (- height 4))))))
+             (setf thumb-rect `(0 ,(round
+                                    (cond
+                                      ((< val-pos 9) 1)
+                                      ((> val-pos (- height 9)) (- height 19))
+                                      (t (+ val-pos -10))))
+                                  14 19))
+             (setf thumb-line-coords `(4 ,val-pos 11 ,val-pos))))
+          (t
+           (let ((val-pos (round (+ 2 (* prop (- width 4))))))
+             (setf thumb-rect `(,(cond
+                                     ((< val-pos 9) 1)
+                                     ((> val-pos (- width 9)) (- width 19))
+                                     (t (+ val-pos -10)))
+                                 0 19 14))
+             (setf thumb-line-coords `(,val-pos 4 ,val-pos 11)))))
+        (q+:add-Rounded-Rect thumb-path (q+:make-qrectf (apply #'q+:make-qrect thumb-rect)) 2 2)
+        (q+:set-color (q+:pen painter) (q+:make-qcolor 153 153 153))
+        (q+:fill-path painter thumb-path (q+:make-qbrush (q+:make-qcolor 255 255 255 255)))
+        (q+:draw-path painter thumb-path)
+        (q+:set-color (q+:pen painter) (q+:make-qcolor 0 0 0 255))
+        (q+:set-width (q+:pen painter) 2)
+        (apply #'q+:draw-line painter thumb-line-coords)))))
+
 (define-override (scrollbar paint-event) (ev)
   (declare (ignore ev))
   (with-finalizing ((painter (q+:make-qpainter scrollbar)))
