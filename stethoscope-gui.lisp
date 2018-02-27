@@ -1,4 +1,4 @@
-;;;; sthethoscope.lisp
+;;;; stethoscope-gui.lisp
 ;;;;
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
@@ -232,10 +232,11 @@ QScrollBar::add-line:vertical {
   (q+:repaint (steth-view-pane stethoscope)))
 
 #|
-
+(signal! (find-gui "stethoscope") (text-changed "3"))
 |#
 
-;;; (gui-funcall (create-tl-widget 'stethoscope "stethoscope"))
+;;; (gui-funcall (create-tl-widget 'stethoscope "stethoscope02"))
+;;; (gui-funcall (create-tl-widget 'stethoscope :stethoscope01))
 
 ;;; (#_close (find-gui "stethoscope"))
 ;;; (#_hide (find-gui "stethoscope"))
