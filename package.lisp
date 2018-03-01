@@ -9,6 +9,7 @@
            #:GUI-STOP
            #:FIND-GUI
            #:STETHOSCOPE
+           #:SCOPE
            #:METER-GUI
            #:METERS
            #:NODE-IDS

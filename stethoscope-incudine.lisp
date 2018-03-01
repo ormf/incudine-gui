@@ -4,6 +4,8 @@
 
 (in-package #:scratch)
 
+(deftype uint () '(integer 0 #.most-positive-fixnum))
+
 (define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter)
                             (periods channel-number))
   (:defaults +sample-zero+ 10 nil 2)
@@ -78,37 +80,53 @@
               (setf (aref gui-array chan-idx) buf-b)
               (setf (aref gui-array chan-idx) buf-a))))))
 
-(define-vug scope-vug ((in channel-number)
-                       (size fixnum)
-                       (numchans channel-number)
+(define-vug scope-vug ((numchans channel-number)
+                       (in channel-number)
                        (gui incudine-gui::stethoscope)
-                       (maxsize fixnum))
+                       (size uint)
+                       (maxsize uint))
   (with ((sample-idx 0)
          (curr 0)
          (bufs-a (make-array numchans :element-type 'buffer :initial-element (make-buffer 1)))
          (bufs-b (make-array numchans :element-type 'buffer :initial-element (make-buffer 1)))
-         (curr-buf (make-array numchans :element-type 'buffer :initial-element (make-buffer 1))))
-    (declare (fixnum sample-idx curr))
+         (curr-bufs (make-array numchans :element-type 'buffer :initial-element (make-buffer 1))))
+    (declare (fixnum curr) (uint sample-idx))
     (initialize
      (dotimes (idx numchans)
-       (setf (aref bufs-a idx) (make-local-buffer (1+ maxsize)))
-       (setf (aref bufs-b idx) (make-local-buffer (1+ maxsize)))) 
+       (setf (aref bufs-a idx) (make-local-buffer (the uint (1+ maxsize))))
+       (setf (aref bufs-b idx) (make-local-buffer (the uint (1+ maxsize))))) 
      (setf (incudine-gui::bufs gui) bufs-b)
-     (setf curr-buf bufs-a))
-    (dotimes (idx numchans)
-      (setf (buffer-value (aref curr-buf idx) sample-idx) (audio-in (+ in idx))))
-    (incf sample-idx)
-    (if (>= sample-idx (min size maxsize))
-        (progn
-          (setf sample-idx 0)
-          (setf curr (lognot curr))
-          (if (zerop curr)
-              (progn
-                (setf (incudine-gui::bufs gui) bufs-b)
-                (setf curr-buf bufs-a))
-              (progn
-                (setf (incudine-gui::bufs gui) bufs-a)
-                (setf curr-buf bufs-b)))))))
+     (setf curr-bufs bufs-a)
+     (nrt-funcall (lambda () (format t "~&bufs-a: ~a~%bufs-b: ~a~%curr-bufs: ~a~%"
+                                bufs-a bufs-b curr-bufs))))
+    (progn
+      (dotimes (idx numchans)
+        (setf (buffer-value (aref curr-bufs idx) sample-idx) (audio-in (+ in idx))))
+      (incf sample-idx)
+      (if (>= sample-idx (min size maxsize))
+          (progn
+            (reduce-warnings
+              (nrt-funcall (lambda () (cuda-gui::signal! gui (cuda-gui::repaint-view)))))
+            (setf sample-idx 0)
+            (setf curr (lognot curr))
+            (if (zerop curr)
+                (progn
+                  (setf (incudine-gui::bufs gui) bufs-b)
+                  (setf curr-bufs bufs-a))
+                (progn
+                  (setf (incudine-gui::bufs gui) bufs-a)
+                  (setf curr-bufs bufs-b)))
+            )))))
 
-(dsp! scope-dsp ((numchans channel-number) (bus-num channel-number) (gui incudine-gui::stethoscope))
-  (scope-vug bus-num 1024 numchans gui 8192))
+;;;          (nrt-funcall (lambda () (cuda-gui::gui-funcall (q+:repaint gui))))
+
+;;; (dotimes (idx 3) (print idx) (print idx))
+
+(define-vug sine (freq amp phase)
+  (sin (+ (* +twopi+ (phasor freq 0)) phase))
+  (* amp ))
+
+(dsp! scope-dsp ((numchans channel-number) (bus-num channel-number) (gui incudine-gui::stethoscope)
+                 (bufsize uint) (bufmaxsize uint))
+  (:defaults 2 0 nil 1024 8192)
+  (scope-vug numchans bus-num gui bufsize bufmaxsize))
