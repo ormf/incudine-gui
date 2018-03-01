@@ -96,9 +96,7 @@
        (setf (aref bufs-a idx) (make-local-buffer (the uint (1+ maxsize))))
        (setf (aref bufs-b idx) (make-local-buffer (the uint (1+ maxsize))))) 
      (setf (incudine-gui::bufs gui) bufs-b)
-     (setf curr-bufs bufs-a)
-     (nrt-funcall (lambda () (format t "~&bufs-a: ~a~%bufs-b: ~a~%curr-bufs: ~a~%"
-                                bufs-a bufs-b curr-bufs))))
+     (setf curr-bufs bufs-a))
     (progn
       (dotimes (idx numchans)
         (setf (buffer-value (aref curr-bufs idx) sample-idx) (audio-in (+ in idx))))

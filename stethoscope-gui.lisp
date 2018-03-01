@@ -111,10 +111,13 @@
 (define-override (stethoscope-view paint-event) (ev)
   (declare (ignore ev))
   (with-finalizing ((painter (q+:make-qpainter stethoscope-view)))
-    (let ((width (q+:width stethoscope-view))
-          (height (q+:height stethoscope-view))
-          (num-chans (num-chans (main-widget stethoscope-view)))
-          (size (bufsize (main-widget stethoscope-view))))
+    (let* ((width (q+:width stethoscope-view))
+           (height (q+:height stethoscope-view))
+           (num-chans (num-chans (main-widget stethoscope-view)))
+           (size (bufsize (main-widget stethoscope-view)))
+           (y-scale (* height 0.5
+                       (- 1 (/ (q+:value (scroll-y (steth-view-pane (main-widget stethoscope-view)))) 10000))
+                       )))
        (setf (q+:background painter)
              (q+:make-qbrush (q+:make-qcolor 0 0 0 255) (q+:qt.solid-pattern)))
       (q+:erase-rect painter (q+:rect stethoscope-view))
@@ -132,7 +135,7 @@
                  (q+:move-to paint-path width y-pos)
                  (q+:line-to paint-path 0 y-pos)
                  (dotimes (x num-points)
-                   (let ((amp (round (* 40 (incudine:buffer-value buf (round (* x idx-inc)))))))
+                   (let ((amp (round (* y-scale (incudine:buffer-value buf (round (* x idx-inc)))))))
                      (q+:line-to paint-path (* x x-inc)
                                  (+ y-pos amp))))
                  (q+:close-subpath paint-path)
@@ -262,6 +265,33 @@
   (restart-stethoscope-dsp stethoscope)
   (q+:repaint (steth-view-pane stethoscope)))
 
+(defun normalize (val min max)
+  (/ (- val min) (- max min)))
+
+(define-slot (stethoscope x-scroll-changed) ((value int))
+  (declare (connected
+            (scroll-x (steth-view-pane stethoscope))
+            (value-changed int)))
+  (let* ((scrollbar (scroll-x (steth-view-pane stethoscope)))
+         (prop (normalize
+                value
+                (q+:minimum scrollbar)
+                (q+:maximum scrollbar)))
+         (new-size (round (+ 128 (* prop (- (bufmaxsize stethoscope) 128))))))
+    (setf (bufsize stethoscope) new-size)
+    (incudine:set-control (dsp-node-id stethoscope) :bufsize new-size)))
+
+#|
+(define-slot (stethoscope y-scroll-changed) ((value int))
+  (declare (connected
+            (scroll-y (steth-view-pane stethoscope))
+            (value-changed int)))
+  (let* ((scrollbar (scroll-y (steth-view-pane stethoscope)))
+         (new-size (round (+ 128 (* prop (- (bufmaxsize stethoscope) 128))))))
+    (setf (bufsize stethoscope) new-size)
+    (incudine:set-control (dsp-node-id stethoscope) :bufsize new-size)))
+|#
+
 (define-signal (stethoscope repaint-view) ())
 
 (define-slot (stethoscope repaint-view) ()
@@ -277,6 +307,8 @@
 
 #|
 (signal! (find-gui :stethoscope01) (repaint-view))
+
+(incudine:set-control (dsp-node-id (find-gui "Stethoscope")) :bufsize 8192)
 
 |#
 
