@@ -170,15 +170,6 @@ The alternative is a foreign *GUI-BUS-POINTER*:
         (setf sum +sample-zero+)
         (setf count 0)))))
 
-(defun make-idx-array (hop-size size)
-  (let ((idx-array
-         (make-array hop-size :adjustable nil :element-type 'channel-number :initial-element 0)))
-     (dotimes (i hop-size)
-       (setf (aref idx-array i) (round (* i (/ size hop-size)))))
-     idx-array))
-
-
-
 (define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter)
                             (periods channel-number))
   (:defaults +sample-zero+ 10 nil 2)

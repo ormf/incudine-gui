@@ -5,19 +5,15 @@
 (in-package #:incudine-gui)
 (in-readtable :qtools)
 
-(define-widget stethoscope-ctl (QDialog)
-  ((num-chans-box :accessor num-chans-box)
-   (bus-num-box :accessor bus-num-box)
-   (mode-button :accessor mode-button)
+(define-widget stethoscope-ctl (QDialog) ;;; top area of stethoscope
+  ((num-chans-box :initform (make-instance 'numbox) :accessor num-chans-box)
+   (bus-num-box :initform (make-instance 'numbox) :accessor bus-num-box)
+   (mode-button :initform (make-instance 'pushbutton) :accessor mode-button)
    (tracks-action :accessor tracks-action)
    (overlay-action :accessor overlay-action)
    (xy-action :accessor xy-action)))
 
 (define-subwidget (stethoscope-ctl layout) (q+:make-qhboxlayout stethoscope-ctl)
-  (setf num-chans-box (make-instance 'numbox))
-  (setf bus-num-box (make-instance 'numbox))
-  (setf mode-button (make-instance 'pushbutton))
-  (q+:set-fixed-width mode-button 85)
   (let ((menu (q+:make-qmenu)))
     (setf tracks-action (q+:make-qaction "Tracks" menu))
     (setf overlay-action (q+:make-qaction "Overlay" menu))
@@ -34,9 +30,10 @@
   (q+:add-widget layout (make-instance 'scroll-corner-box))
   (q+:set-margin layout 0)
   (q+:set-spacing layout 2)
+  (q+:set-fixed-width mode-button 85)
   (q+:set-fixed-height stethoscope-ctl 25))
 
-(define-widget stethoscope-view (QWidget)
+(define-widget stethoscope-view (QWidget) ;;; the plot area
   ((style :initform "background-color: black;" :accessor style)
    (main-widget :accessor main-widget)))
 
@@ -66,55 +63,12 @@
              (q+:draw-line painter 0 y-pos width y-pos))))
         (:xy )))))
 
-(define-widget stethoscope-view-pane (QWidget)
-  ((steth-view :accessor steth-view)
-   (scroll-x :accessor scroll-x)
-   (scroll-y :accessor scroll-y)))
-
-#|
-
-(defparameter *scroll-bar-style* "QScrollBar::add-line {
-      border: none;
-      background: none;
-}
-
-QScrollBar::sub-line {
-      border: none;
-      background: none;
-}
-
-"
-
-  )
-
-QScrollBar::add-line:vertical {
-      margin: 0 0 0 15;
-      border: none;
-      background: none;
-}
-(define-subwidget (stethoscope-view-pane layout) (q+:make-qhboxlayout stethoscope-view-pane)
-  (setf steth-view (make-instance 'stethoscope-view))
-  (setf scroll-x (q+:make-qscrollbar (#_Horizontal "Qt") stethoscope-view-pane))
-  (setf scroll-y (q+:make-qscrollbar (#_Vertical "Qt") stethoscope-view-pane))
-  (q+:set-fixed-height scroll-x 15)
-  (q+:set-fixed-width scroll-y 15)
-  (q+:set-style-sheet scroll-x *scroll-bar-style*)
-  (q+:set-style-sheet scroll-y *scroll-bar-style*)
-  (q+:set-margin layout 0)
-  (q+:set-spacing layout 2)
-  (let ((inner (q+:make-qvboxlayout)))
-    (q+:set-margin inner 0)
-    (q+:set-spacing inner 2)
-    (q+:add-widget inner steth-view)
-    (q+:add-widget inner scroll-x)
-    (q+:add-layout layout inner)
-    (q+:add-widget layout scroll-y)))
-|#
+(define-widget stethoscope-view-pane (QWidget) ;;; plot area with scrollbars
+  ((steth-view :initform (make-instance 'stethoscope-view) :accessor steth-view)
+   (scroll-x :initform (make-instance 'scrollbar :orientation :horizontal) :accessor scroll-x)
+   (scroll-y :initform (make-instance 'scrollbar :orientation :vertical) :accessor scroll-y)))
 
 (define-subwidget (stethoscope-view-pane layout) (q+:make-qhboxlayout stethoscope-view-pane)
-  (setf steth-view (make-instance 'stethoscope-view))
-  (setf scroll-x (make-instance 'scrollbar :orientation :horizontal))
-  (setf scroll-y (make-instance 'scrollbar :orientation :vertical))
   (q+:set-margin layout 0)
   (q+:set-spacing layout 2)
   (let ((inner1 (q+:make-qvboxlayout))
@@ -130,47 +84,23 @@ QScrollBar::add-line:vertical {
     (q+:add-widget inner2 (make-instance 'scroll-corner-box))
     (q+:add-layout layout inner2)))
 
-
-#|
-
-(define-subwidget (login layout) (q+:make-qvboxlayout login)
-  (setf (q+:window-title login) "Login to Twitter")
-  (q+:add-widget layout url)
-  (let ((inner (q+:make-qhboxlayout)))
-    (q+:add-widget inner pin)
-    (q+:add-widget inner go)
-    (q+:add-layout layout inner)))
-
-(define-signal (levelmeter set-level) (int))
-
-(define-slot (levelmeter set-level) ((value int))
-  (declare (connected
-            levelmeter
-            (set-level int)))
-   (setf (level levelmeter) value)
-   (q+:repaint levelmeter))
-
-(defun change-level (levelmeter value)
-  (signal! levelmeter (set-level int) value))
-
-|#
-
 (define-widget stethoscope (QDialog cudagui-tl-mixin)
-  ((num-chans :initform 2 :accessor num-chans)
+  ((dsp-node-id :initform nil :accessor dsp-node-id)
+   (steth-ctl :initform (make-instance 'stethoscope-ctl) :accessor steth-ctl)
+   (steth-view-pane :initform (make-instance 'stethoscope-view-pane)
+                    :accessor steth-view-pane)
+   (bufs :accessor bufs :type '(simple-array buffer (*)))
+   (num-chans :initform 2 :accessor num-chans)
    (bus-num :initform 0 :accessor bus-num)
    (draw-mode :initform :tracks :accessor draw-mode)
    (zoom-x :initarg zoom-x :accessor zoom-x)
    (zoom-y :initarg zoom-y :accessor zoom-y)
    (chans-minval :initform 1 :accessor chans-minval)
-   (chans-maxval :initform 26 :accessor chans-maxval)
+   (chans-maxval :initform 64 :accessor chans-maxval)
    (bus-minval :initform 0 :accessor bus-minval)
-   (bus-maxval :initform 24 :accessor bus-minval)
-   (steth-ctl :accessor steth-ctl)
-   (steth-view-pane :accessor steth-view-pane)))
+   (bus-maxval :initform 24 :accessor bus-minval)))
 
 (define-subwidget (stethoscope layout) (q+:make-qvboxlayout stethoscope)
-  (setf steth-ctl (make-instance 'stethoscope-ctl))
-  (setf steth-view-pane (make-instance 'stethoscope-view-pane))
   (q+:set-text (num-chans-box steth-ctl) (format nil "~a" num-chans))
   (q+:set-text (bus-num-box steth-ctl) (format nil "~a" bus-num))
   (setf (minval (num-chans-box steth-ctl)) chans-minval)
@@ -186,10 +116,13 @@ QScrollBar::add-line:vertical {
   (let ((*background-color* "background-color: #dbdbdb;"))
     (cudagui-tl-initializer stethoscope))
   (setf (main-widget (steth-view steth-view-pane)) stethoscope)
-  (q+:set-geometry stethoscope 30 30 480 480))
+  (q+:set-geometry stethoscope 30 30 480 480)
+  (setf dsp-node-id (incudine:next-node-id))
+  (scratch::scope-dsp num-chans bus-num stethoscope))
 
 (define-override (stethoscope close-event) (ev)
   (declare (ignore ev))
+  (incudine:free dsp-node-id)
   (remove-gui (id stethoscope))
   (call-next-qmethod))
 
@@ -238,13 +171,18 @@ QScrollBar::add-line:vertical {
 ;;; (gui-funcall (create-tl-widget 'stethoscope "stethoscope02"))
 ;;; (gui-funcall (create-tl-widget 'stethoscope :stethoscope01))
 
+
+;; (buffer-value (aref (cuda-gui::bufs (cuda-gui::find-gui "stethoscope02")) 0) 200)
+
+
 ;;; (#_close (find-gui "stethoscope"))
 ;;; (#_hide (find-gui "stethoscope"))
 ;;; (#_show (find-gui "stethoscope"))
+
+;;; (type-of (find-gui "stethoscope02"))
 
 ;;;(style (steth-view (steth-view-pane (find-gui "stethoscope"))))
 
 ;;; (num-chans (find-gui "stethoscope"))
 
 ;;; (setf (num-chans (find-gui "stethoscope")) 3)
-

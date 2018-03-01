@@ -6,7 +6,7 @@
 (in-readtable :qtools)
 
 (define-widget levelmeter-main (Qwidget cudagui-tl-mixin)
-  ((node-ids :initarg :node-ids :accessor node-ids)
+  ((dsp-node-ids :initarg :dsp-node-ids :accessor dsp-node-ids)
    (num :initform 2 :initarg :num :accessor num)
    (meters :initarg :meters :accessor meters)))
 
@@ -74,10 +74,10 @@
 (defun change-level (levelmeter value)
   (signal! levelmeter (set-level int) value))
 
-(defun meter-gui (&key (num 2) (id "Meters") node-ids)
+(defun meter-gui (&key (num 2) (id "Meters") dsp-node-ids)
   (if (find-gui id)
       (error "widget ~a already existing. Please choose another name." id)
-      (create-tl-widget 'levelmeter-main id :num num :node-ids node-ids)))
+      (create-tl-widget 'levelmeter-main id :num num :dsp-node-ids dsp-node-ids)))
 
 ;;; (meter-gui :num 2 :id "Meters")
 

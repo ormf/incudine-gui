@@ -7,6 +7,8 @@
   (:use #:cl+qt)
   (:export #:GUI-START
            #:GUI-STOP
+           #:FIND-GUI
+           #:STETHOSCOPE
            #:METER-GUI
            #:METERS
            #:NODE-IDS

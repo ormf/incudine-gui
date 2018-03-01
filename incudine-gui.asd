@@ -21,5 +21,6 @@
                (:file "scrollbar")
                (:file "levelmeter-gui")
                (:file "levelmeter-incudine")
-               (:file "stethoscope")))
+               (:file "stethoscope-gui")
+               (:file "stethoscope-incudine")))
 
