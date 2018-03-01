@@ -80,7 +80,6 @@
         (q+:set-color (q+:pen painter) (q+:make-qcolor 0 0 0 255))
         (q+:set-width (q+:pen painter) 2)
         (apply #'q+:draw-line painter thumb-line-coords)))))
-|#
 
 
 (define-override (stethoscope-view paint-event) (ev)
@@ -105,6 +104,9 @@
            (let ((y-pos (round (/ height 2))))
              (q+:draw-line painter 0 y-pos width y-pos))))
         (:xy )))))
+
+|#
+
 
 (define-override (stethoscope-view paint-event) (ev)
   (declare (ignore ev))
@@ -134,7 +136,8 @@
                      (q+:line-to paint-path (* x x-inc)
                                  (+ y-pos amp))))
                  (q+:close-subpath paint-path)
-                 (q+:draw-path painter paint-path))))))
+                 (q+:draw-path painter paint-path)
+                 (q+:fill-path painter paint-path (q+:make-qbrush (q+:make-qcolor 165 141 0) (q+:qt.solid-pattern))))))))
         (:overlay
          (dotimes (i num-chans)
            (let ((y-pos (round (/ height 2))))
