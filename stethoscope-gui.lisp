@@ -131,12 +131,13 @@
 
 (define-widget stethoscope (QDialog cudagui-tl-mixin)
   ((dsp-node-id :initform nil :accessor dsp-node-id)
+   (dsp-group :initform nil :initarg :group :accessor dsp-group)
    (steth-ctl :initform (make-instance 'stethoscope-ctl) :accessor steth-ctl)
    (steth-view-pane :initform (make-instance 'stethoscope-view-pane)
                     :accessor steth-view-pane)
    (bufs :accessor bufs :type '(simple-array buffer (*)))
-   (num-chans :initform 2 :accessor num-chans)
-   (bus-num :initform 0 :accessor bus-num)
+   (num-chans :initform 2 :initarg :num-chans :accessor num-chans)
+   (bus-num :initform 0 :initarg :bus-num :accessor bus-num)
    (draw-mode :initform :tracks :accessor draw-mode)
    (zoom-x :initarg zoom-x :accessor zoom-x)
    (zoom-y :initarg zoom-y :accessor zoom-y)
@@ -164,7 +165,7 @@
     (cudagui-tl-initializer stethoscope))
   (setf (main-widget (steth-view steth-view-pane)) stethoscope)
   (q+:set-geometry stethoscope 30 30 480 480)
-  (restart-stethoscope-dsp stethoscope))
+  (restart-stethoscope-dsp stethoscope :group dsp-group))
 
 (define-override (stethoscope close-event) (ev)
   (declare (ignore ev))
@@ -199,11 +200,12 @@
     (q+:set-text (mode-button (steth-ctl stethoscope)) "X/Y")
     (q+:repaint (steth-view-pane stethoscope))))
 
-(defun restart-stethoscope-dsp (stethoscope)
+(defun restart-stethoscope-dsp (stethoscope &key (group 400))
   (setf (dsp-node-id stethoscope) (incudine:next-node-id))
   (scratch::scope-dsp (num-chans stethoscope) (bus-num stethoscope) stethoscope
                       (bufsize stethoscope)
                       (bufmaxsize stethoscope)
+                      :tail group
                       :id (dsp-node-id stethoscope)))
 
 (define-slot (stethoscope num-tracks-changed) ((text string))
@@ -261,8 +263,8 @@
             (repaint-view)))
   (q+:repaint (steth-view (steth-view-pane stethoscope))))
 
-(defun scope (&key (id "Stethoscope"))
-  (gui-funcall (create-tl-widget 'stethoscope id)))
+(defun scope (&key (id "Stethoscope") (group 400) (bus 8) (num-chans 2))
+  (gui-funcall (create-tl-widget 'stethoscope id :group group :bus-num bus :num-chans num-chans)))
 
 ;;; (scope)
 

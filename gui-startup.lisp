@@ -98,6 +98,8 @@ body)
 ;;; (setf *qapplication* nil)
 ;;; (setf *controller* nil)
 (gui-start)
+
+(start)
 (init-controller)
 (gui-stop)
 

@@ -15,5 +15,6 @@
 (defun start ()
   (incudine:rt-start)
   (sleep 0.5)
+  (scratch:setup-io)
   (gui-start)
   (in-package :scratch)) 

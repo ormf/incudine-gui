@@ -83,7 +83,7 @@
 
 ;;; (meter-gui :num 2 :id "Meters")
 
-;;; (meter-gui :num 8 :id "Meters02")
+;;; (meter-gui :num 16 :id "Meters02")
 ;;;(find-gui "Meters02")
 
 

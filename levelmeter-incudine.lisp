@@ -205,16 +205,17 @@ The alternative is a foreign *GUI-BUS-POINTER*:
 (dsp! env-monometer ((freq fixnum) (gui incudine-gui::levelmeter) (chan channel-number)
                      (hop-size channel-number))
    (:defaults 10 nil 0 2)
-   (foreach-frame (env-levelmeter (audio-in chan) freq gui hop-size)))
+   (foreach-frame (env-levelmeter (bus chan) freq gui hop-size)))
  
-(defun meters (&key (num *number-of-input-bus-channels*) (id "Meters") (freq 5) (hop-size 2) (audio-bus 0))
+(defun meters (&key (group 300) (num *number-of-input-bus-channels*) (id "Meters") (freq 5) (hop-size 2) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :dsp-node-ids '() :id id)))
     (dotimes (idx num)
       (env-monometer freq (svref (incudine-gui::meters gui) idx)
                      (+ audio-bus idx) hop-size
                      :action (lambda (n)
                                (push (node-id n)
-                                     (cuda-gui::dsp-node-ids gui)))))))
+                                     (cuda-gui::dsp-node-ids gui)))
+                     :tail group))))
 
 #|
 
