@@ -55,8 +55,10 @@
     (dochannels (idx numchans)
       (setf (buffer-value (svref curr-bufs idx) sample-idx)
             (audio-in (+ in idx)))
-      (nrt-funcall
-          (lambda () (format t "current-channel: ~a" idx))))
+;;;   (nrt-funcall
+;;;       (lambda () (format t "current-channel: ~a" idx))
+      )
+    )
     (incf sample-idx)
     (when (>= sample-idx sample-max-idx)
       (reduce-warnings
