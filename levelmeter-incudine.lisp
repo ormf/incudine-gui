@@ -178,8 +178,9 @@ The alternative is a foreign *GUI-BUS-POINTER*:
          (sums (make-frame periods :zero-p t))
          (bufidx (make-array periods :element-type 'channel-number))
          (max +sample-zero+)
-         (value 0))
-    (declare  (fixnum size value) (sample max))
+         (value 0)
+         (last-value #.most-positive-fixnum))
+    (declare  (fixnum size value last-value) (sample max))
     (initialize
       (dotimes (i periods)
         (setf (aref bufidx i)
@@ -192,34 +193,38 @@ The alternative is a foreign *GUI-BUS-POINTER*:
                 (round-sample
                   (+ 100 (lin->db
                           (sqrt (the non-negative-sample (smp-ref sums i)))))))
-          (nrt-funcall
-            (lambda ()
-              (cuda-gui:change-level meter value)))
+          (if (/= last-value value)
+              (progn
+                (nrt-funcall
+                 (lambda ()
+                   (cuda-gui:change-level meter value)))
+                (setf last-value value)))
           (setf (smp-ref sums i) +sample-zero+)
           (setf (aref bufidx i) 0))))))
 
 (dsp! env-monometer ((freq fixnum) (gui incudine-gui::levelmeter) (chan channel-number)
                      (hop-size channel-number))
    (:defaults 10 nil 0 2)
-   (env-levelmeter (audio-in chan) freq gui hop-size))
+   (foreach-frame (env-levelmeter (audio-in chan) freq gui hop-size)))
  
-(defun meters (&key (num *number-of-input-bus-channels*) (id "Meters") (freq 10) (hop-size 2) (audio-bus 0))
-  (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
+(defun meters (&key (num *number-of-input-bus-channels*) (id "Meters") (freq 5) (hop-size 2) (audio-bus 0))
+  (let* ((gui (cuda-gui:meter-gui :num num :dsp-node-ids '() :id id)))
     (dotimes (idx num)
       (env-monometer freq (svref (incudine-gui::meters gui) idx)
                      (+ audio-bus idx) hop-size
                      :action (lambda (n)
                                (push (node-id n)
-                                     (cuda-gui:node-ids gui)))))))
+                                     (cuda-gui::dsp-node-ids gui)))))))
 
 #|
 
+(meters :id "meters03")
 (dsp! monometer (freq (gui incudine-gui::levelmeter) (chan channel-number) (gui-idx channel-number))
    (:defaults 10 nil 0 0)
    (levelmeter (audio-in chan) freq gui))
 
 (defun meters (&key (num 2) (id "Meters") (freq 10) (audio-bus 0))
-  (let* ((gui (cuda-gui:meter-gui :num num :node-ids '() :id id)))
+  (let* ((gui (cuda-gui:meter-gui :num num :dsp-node-ids '() :id id)))
     (loop
        for idx below num
        do (progn

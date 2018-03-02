@@ -42,45 +42,6 @@
   (q+:set-style-sheet stethoscope-view style))
 
 #|
-(define-override (scrollbar paint-event) (ev)
-  (declare (ignore ev))
-  (with-finalizing ((painter (q+:make-qpainter scrollbar)))
-    (let* ((width (q+:width scrollbar))
-           (height (q+:height scrollbar))
-           (max (q+:maximum scrollbar))
-           (min (q+:minimum scrollbar))
-           (prop (float (/ (- (q+:value scrollbar) min)
-                           (- max min)))))
-      (q+:set-render-hint painter (#_Antialiasing "QPainter"))
-      (q+:erase-rect painter (q+:rect scrollbar))
-      (let ((bg-path (q+:make-QPainterPath)))
-        (q+:add-Rounded-Rect bg-path (q+:make-qrectf (q+:rect scrollbar)) 5 5)
-        (q+:set-color (q+:pen painter) (q+:make-qcolor 131 131 131 255))
-        (q+:set-width (q+:pen painter) 2) ;;; border-color of scroll-background
-        (q+:fill-path painter bg-path (q+:make-qbrush (q+:make-qcolor 182 182 182 255))) ;;; background-color of scroll-background
-        (q+:draw-path painter bg-path))
-      (let ((thumb-path (q+:make-QPainterPath))
-            thumb-line-coords
-            thumb-rect)
-        (case (orientation scrollbar)
-          (:vertical
-           (let ((val-pos (round (+ 2 (* prop (- height 4))))))
-             (setf thumb-rect `(0 ,(max 1 (- val-pos 10))
-                                  14 ,(+ 9 (min 10 val-pos (- height val-pos)))))
-             (setf thumb-line-coords `(4 ,val-pos 11 ,val-pos))))
-          (t
-           (let ((val-pos (round (+ 2 (* prop (- width 4))))))
-             (setf thumb-rect `(,(max 1 (- val-pos 10))
-                                 0 ,(+ 9 (min 10 val-pos (- width val-pos))) 14))
-             (setf thumb-line-coords `(,val-pos 4 ,val-pos 11)))))
-        (q+:add-Rounded-Rect thumb-path (q+:make-qrectf (apply #'q+:make-qrect thumb-rect)) 2 2)
-        (q+:set-color (q+:pen painter) (q+:make-qcolor 153 153 153))
-        (q+:fill-path painter thumb-path (q+:make-qbrush (q+:make-qcolor 255 255 255 255)))
-        (q+:draw-path painter thumb-path)
-        (q+:set-color (q+:pen painter) (q+:make-qcolor 0 0 0 255))
-        (q+:set-width (q+:pen painter) 2)
-        (apply #'q+:draw-line painter thumb-line-coords)))))
-
 
 (define-override (stethoscope-view paint-event) (ev)
   (declare (ignore ev))
@@ -109,15 +70,15 @@
 
 
 (define-override (stethoscope-view paint-event) (ev)
-  (declare (ignore ev))
+  (declare (ignore ev) (optimize (speed 3)))
   (with-finalizing ((painter (q+:make-qpainter stethoscope-view)))
     (let* ((width (q+:width stethoscope-view))
            (height (q+:height stethoscope-view))
            (num-chans (num-chans (main-widget stethoscope-view)))
            (size (bufsize (main-widget stethoscope-view)))
            (y-scale (* height 0.5
-                       (- 1 (/ (q+:value (scroll-y (steth-view-pane (main-widget stethoscope-view)))) 10000))
-                       )))
+                       (- 1 (/ (q+:value (scroll-y (steth-view-pane (main-widget stethoscope-view)))) 10000)))))
+      (declare (fixnum width height num-chans size))
        (setf (q+:background painter)
              (q+:make-qbrush (q+:make-qcolor 0 0 0 255) (q+:qt.solid-pattern)))
       (q+:erase-rect painter (q+:rect stethoscope-view))
@@ -306,11 +267,16 @@
 ;;; (scope)
 
 #|
+
+
+
 (signal! (find-gui :stethoscope01) (repaint-view))
 
 (incudine:set-control (dsp-node-id (find-gui "Stethoscope")) :bufsize 8192)
 
 |#
+
+
 
 ;;; (gui-funcall (create-tl-widget 'stethoscope "stethoscope02"))
 ;;; (gui-funcall (create-tl-widget 'stethoscope :stethoscope01))

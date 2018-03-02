@@ -26,3 +26,9 @@
 
 (defun find-gui (id &key (db *guis*))
   (gethash id db))
+
+(defun close-all-guis ()
+  (maphash #'(lambda (key gui) (declare (ignore key))
+                (progn (#_close gui)
+                       (sleep 0.1)))
+           cuda-gui::*guis*))

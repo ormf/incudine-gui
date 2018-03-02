@@ -12,6 +12,6 @@
            #:SCOPE
            #:METER-GUI
            #:METERS
-           #:NODE-IDS
+           #:DSP-NODE-IDS
            #:*TEST*
            #:CHANGE-LEVEL))

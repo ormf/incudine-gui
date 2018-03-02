@@ -113,8 +113,7 @@
                   (setf curr-bufs bufs-a))
                 (progn
                   (setf (incudine-gui::bufs gui) bufs-a)
-                  (setf curr-bufs bufs-b)))
-            )))))
+                  (setf curr-bufs bufs-b))))))))
 
 ;;;          (nrt-funcall (lambda () (cuda-gui::gui-funcall (q+:repaint gui))))
 
@@ -127,4 +126,4 @@
 (dsp! scope-dsp ((numchans channel-number) (bus-num channel-number) (gui incudine-gui::stethoscope)
                  (bufsize uint) (bufmaxsize uint))
   (:defaults 2 0 nil 1024 8192)
-  (scope-vug numchans bus-num gui bufsize bufmaxsize))
+  (foreach-frame (scope-vug numchans bus-num gui bufsize bufmaxsize)))

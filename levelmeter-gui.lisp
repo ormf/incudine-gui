@@ -15,10 +15,11 @@
   (q+:set-geometry levelmeter-main 50 50 (* num 25) 400))
 
 (define-override (levelmeter-main paint-event) (ev)
-  (declare (ignore ev))
+  (declare (ignore ev) (optimize (speed 3)))
   (with-finalizing ((painter (q+:make-qpainter levelmeter-main)))
     (let ((width (q+:width levelmeter-main))
           (height (q+:height levelmeter-main)))
+      (declare (fixnum height width))
       ;; (setf (q+:background painter)
       ;;       (q+:make-qbrush (q+:make-qcolor 60 60 60 255) (q+:qt.solid-pattern)))
       (q+:erase-rect painter (q+:rect levelmeter-main))
@@ -26,7 +27,8 @@
       (let* ((db-inc 6)
              (margin 12)
              (meter-height (- height (* 2 margin)))
-             (ht-inc (* meter-height (/ db-inc 100))))
+             (ht-inc (float (* meter-height (/ db-inc 100)))))
+        (declare (fixnum db-inc margin meter-height)(single-float ht-inc))
         (dotimes (i (1+ (floor (/ 100 db-inc))))
           (let ((y-pos (+ margin (round (* i ht-inc)))))
             (q+:draw-line painter 0 y-pos width y-pos)))
@@ -87,14 +89,22 @@
 
 #|
 (let ((num 2) (id "Meters") node-ids)
-  (make-instance 'levelmeter-main :id id :num num :node-ids node-ids))
+  (make-instance 'levelmeter-main :id id :num num :dsp-node-ids node-ids))
 |#
 
 (define-override (levelmeter-main close-event) (ev)
   (declare (ignore ev))
-  (dolist (id (node-ids levelmeter-main))
-    (format t "~&removing: ~a~%" id)
+  (dolist (id (dsp-node-ids levelmeter-main))
+;;    (format t "~&removing: ~a~%" id)
     (incudine:free id))
-  (format t "~&closing: ~a" levelmeter-main)
+;;  (format t "~&closing: ~a" levelmeter-main)
   (remove-gui (id levelmeter-main))
   (call-next-qmethod))
+
+#|
+Messung:
+            Audio    gui    Summe
+pd (64ch)    7.9      25     36
+                     4-10
+
+|#
