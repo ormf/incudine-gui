@@ -22,8 +22,7 @@
 (dsp! cp-output-buses ((first-out-bus channel-number))
   (:defaults 8)
   (foreach-channel
-    (setf (bus (+ current-channel first-out-bus)) (audio-out current-channel))))r
-
+    (setf (bus (+ current-channel first-out-bus)) (audio-out current-channel))))
 
 (defun setup-io ()
   (make-group 100)

@@ -58,7 +58,6 @@
 ;;;   (nrt-funcall
 ;;;       (lambda () (format t "current-channel: ~a" idx))
       )
-    )
     (incf sample-idx)
     (when (>= sample-idx sample-max-idx)
       (reduce-warnings
