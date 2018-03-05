@@ -57,33 +57,6 @@
   (q+:set-geometry stethoscope-view 50 50 400 400)
   (q+:set-style-sheet stethoscope-view style))
 
-#|
-
-(define-override (stethoscope-view paint-event) (ev)
-  (declare (ignore ev))
-  (with-finalizing ((painter (q+:make-qpainter stethoscope-view)))
-    (let ((width (q+:width stethoscope-view))
-          (height (q+:height stethoscope-view))
-          (num-chans (num-chans (main-widget stethoscope-view))))
-       (setf (q+:background painter)
-             (q+:make-qbrush (q+:make-qcolor 0 0 0 255) (q+:qt.solid-pattern)))
-      (q+:erase-rect painter (q+:rect stethoscope-view))
-      (q+:set-color (q+:pen painter) (q+:make-qcolor 255 218 0 255))
-      (q+:set-brush (q+:pen painter) (q+:make-qbrush (q+:make-qcolor 255 218 0 255) (q+:qt.solid-pattern)))
-      (q+:set-width (q+:pen painter) 1)
-      (case (draw-mode main-widget)
-        (:tracks
-         (dotimes (i num-chans)
-           (let ((y-pos (round (* (+ 0.5 i) (/ height num-chans)))))
-             (q+:draw-line painter 0 y-pos width y-pos))))
-        (:overlay
-         (dotimes (i num-chans)
-           (let ((y-pos (round (/ height 2))))
-             (q+:draw-line painter 0 y-pos width y-pos))))
-        (:xy )))))
-
-|#
-
 (define-override (stethoscope-view paint-event) (ev)
   (declare (ignore ev) (optimize (speed 3)))
   (let ((stethoscope (main-widget stethoscope-view)))
@@ -121,9 +94,22 @@
                            (q+:draw-path painter paint-path)
                            (q+:fill-path painter paint-path (q+:make-qbrush (q+:make-qcolor 165 141 0) (q+:qt.solid-pattern))))))))
                   (:overlay
-                   (dotimes (i num-chans)
-                     (let ((y-pos (round (/ height 2))))
-                       (q+:draw-line painter 0 y-pos width y-pos))))
+                   (let* ((num-points (min width size))
+                          (x-inc (/ width num-points))
+                          (idx-inc (/ size num-points)))
+                     (dotimes (i (length (curr-bufs (main-widget stethoscope-view))))
+                       (let ((y-pos (round (* 0.5 height)))
+                             (buf (aref (curr-bufs (main-widget stethoscope-view)) i)))
+                         (let* ((paint-path (q+:make-QPainterPath)))
+                           (q+:move-to paint-path width y-pos)
+                           (q+:line-to paint-path 0 y-pos)
+                           (dotimes (x num-points)
+                             (let ((amp (round (* y-scale (incudine:buffer-value buf (round (* x idx-inc)))))))
+                               (q+:line-to paint-path (* x x-inc)
+                                           (+ y-pos amp))))
+                           (q+:close-subpath paint-path)
+                           (q+:draw-path painter paint-path)
+                           (q+:fill-path painter paint-path (q+:make-qbrush (q+:make-qcolor 165 141 0) (q+:qt.solid-pattern))))))))
                   (:xy ))))
             (warn "bufs not bound!")))))
 
@@ -150,8 +136,10 @@
     (q+:add-widget inner2 (make-instance 'scroll-corner-box))
     (q+:add-layout layout inner2)))
 
-(define-widget stethoscope (QDialog cudagui-tl-mixin)
+(define-widget stethoscope (QTextEdit cudagui-tl-mixin)
   ((dsp-node-id :initform nil :accessor dsp-node-id)
+   (key-event :initform nil :accessor key-event)
+   (process? :initform t :accessor process?)
    (dsp-group :initform nil :initarg :group :accessor dsp-group)
    (steth-ctl :initform (make-instance 'stethoscope-ctl) :accessor steth-ctl)
    (steth-view-pane :initform (make-instance 'stethoscope-view-pane)
@@ -188,6 +176,7 @@
   (let ((*background-color* "background-color: #dbdbdb;"))
     (cudagui-tl-initializer stethoscope))
   (setf (main-widget (steth-view steth-view-pane)) stethoscope)
+;;;  (setf key-event (q+:install-event-filter *controller* stethoscope))
   (q+:set-geometry stethoscope 30 30 480 480)
   (restart-stethoscope-dsp stethoscope :group dsp-group)
   (setf (redraw? stethoscope) t))
@@ -226,36 +215,6 @@
     (q+:set-text (mode-button (steth-ctl stethoscope)) "X/Y")
     (q+:repaint (steth-view-pane stethoscope))))
 
-;
-
-(defun restart-stethoscope-dsp (stethoscope &key (group 400))
-  (with-slots (num-chans bufmaxsize bufs-a bufs-b curr-bufs) stethoscope
-    (mapc (lambda (slot) (and (slot-boundp stethoscope slot)
-                         (incudine:free (slot-value stethoscope slot))))
-          '(bufs-a bufs-b))
-    (setf bufs-a (make-array num-chans)
-          bufs-b (make-array num-chans)
-          curr-bufs bufs-a
-          )
-    (incudine::dochannels (idx num-chans)
-      (setf (svref bufs-a idx) (incudine:make-buffer (1+ bufmaxsize) :real-time-p t))
-      (setf (svref bufs-b idx) (incudine:make-buffer (1+ bufmaxsize) :real-time-p t))))
-  (incudine:nrt-funcall
-   (lambda () (let ((node (dsp-node-id stethoscope)))
-           (and node (find-node node) (incudine:free node))
-           (format t "~&calling scope-dsp")
-           (scratch::scope-dsp (num-chans stethoscope) (bus-num stethoscope) stethoscope
-                               (bufsize stethoscope)
-                               (bufmaxsize stethoscope)
-                               :action (lambda (n)
-                                         (setf (dsp-node-id stethoscope) (incudine:node-id n)))
-                               :tail group
-                               :id (dsp-node-id stethoscope))
-;;           (sleep 0.5)
-           )))
-  (format t "before-sync~%")
-  (format t "after-sync~%"))
-
 (defun restart-stethoscope-dsp (stethoscope &key (group 400))
   (with-slots (num-chans bufmaxsize bufs-a bufs-b curr-bufs) stethoscope
     (mapc (lambda (slot) (and (slot-boundp stethoscope slot)
@@ -279,6 +238,23 @@
                                :tail group
                                :id (dsp-node-id stethoscope))))
 
+(defmacro toggle (slot)
+  `(setf ,slot (not ,slot)))
+
+(define-slot (stethoscope toggle-dsp) ()
+  (declare (connected stethoscope (toggle-dsp)))
+  (incudine:set-control (dsp-node-id (find-gui "Stethoscope"))
+                        :process? (toggle (process? stethoscope))))
+
+(define-override (stethoscope key-press-event) (ev)
+  (cond ;; Signal return pressed.
+        ((= (q+:key ev) (q+:qt.key_space))
+         (call-next-qmethod)
+         (signal! stethoscope (toggle-dsp)))
+        ;; Delegate standard.
+        (T
+         (call-next-qmethod))))
+
 (define-slot (stethoscope num-tracks-changed) ((text string))
   (declare (connected
             (num-chans-box (steth-ctl stethoscope))
@@ -288,8 +264,6 @@
   (restart-stethoscope-dsp stethoscope)
   (setf (redraw? stethoscope) t)
   (q+:repaint (steth-view-pane stethoscope)))
-
-
 
 (define-slot (stethoscope bus-num-changed) ((text string))
   (declare (connected
@@ -341,6 +315,7 @@
   (gui-funcall (create-tl-widget 'stethoscope id :group group :bus-num bus :num-chans num-chans)))
 
 ;;; (scope :num-chans 2)
+
 #|
 
 (remove-gui "Stethoscope")
@@ -391,5 +366,7 @@
 
 
 (restart-stethoscope-dsp (find-gui "Stethoscope"))
+
+(incudine:set-control (dsp-node-id (find-gui "Stethoscope")) :process? t)
 
 |#

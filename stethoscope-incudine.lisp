@@ -110,6 +110,7 @@
 ;;; (dotimes (idx 3) (print idx) (print idx))
 
 (dsp! scope-dsp ((numchans channel-number) (bus-num channel-number) (gui incudine-gui::stethoscope)
-                 (bufsize uint) (bufmaxsize uint))
-  (:defaults 2 8 nil 1024 8192)
-  (foreach-frame (scope-vug numchans bus-num gui bufsize bufmaxsize)))
+                 (bufsize uint) (bufmaxsize uint) (process? boolean))
+  (:defaults 2 8 nil 1024 8192 t)
+  (if process?
+      (foreach-frame (scope-vug numchans bus-num gui bufsize bufmaxsize))))

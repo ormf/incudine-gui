@@ -50,7 +50,6 @@ selection-background-color: white" :accessor style)))
 ;;  (q+:set-cursor numbox (#_DragLinkCursor "Qt"))
   )
 
-
 (define-override (numbox mouse-move-event) (ev)
   (if mouse-pressed
       (let ((multiplier (max 0.5 (/ (abs (- mouse-last-y (q+:y ev))) 4.0))))
