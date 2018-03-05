@@ -247,7 +247,7 @@
                         :process? (toggle (process? stethoscope))))
 
 (define-override (stethoscope key-press-event) (ev)
-  (cond ;; Signal return pressed.
+  (cond ;; Signal Ctl-Space pressed.
         ((= (q+:key ev) (q+:qt.key_space))
          (call-next-qmethod)
          (signal! stethoscope (toggle-dsp)))
