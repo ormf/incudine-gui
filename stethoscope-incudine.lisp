@@ -42,16 +42,17 @@
   (with ((sample-idx 0)
          (sample-max-idx (min size maxsize))
          (curr-p t)
-         (bufs-a (make-array numchans))
-         (bufs-b (make-array numchans))
          (curr-bufs (make-array numchans)))
     (declare (uint sample-idx sample-max-idx) (boolean curr-p))
     (initialize
-      (dochannels (idx numchans)
-        (setf (svref bufs-a idx) (make-local-buffer (the uint (1+ maxsize))))
-        (setf (svref bufs-b idx) (make-local-buffer (the uint (1+ maxsize)))))
-      (setf (incudine-gui::bufs gui) bufs-b)
-      (setf curr-bufs bufs-a))
+     (reduce-warnings
+       (dochannels (idx numchans)
+         (setf (svref bufs-a idx) (make-buffer (1+ maxsize) :real-time-p t))
+         (setf (svref bufs-b idx) (make-buffer (1+ maxsize) :real-time-p t))))
+     (rplacd (free-hook (dsp-node))
+             (lambda (n) n (mapc 'free (list bufs-a bufs-b))))
+     (setf (incudine-gui::bufs gui) bufs-b)
+     (setf curr-bufs bufs-a))
     (dochannels (idx numchans)
       (setf (buffer-value (svref curr-bufs idx) sample-idx)
             (audio-in (+ in idx)))
@@ -70,6 +71,38 @@
              (setf curr-bufs bufs-a))
             (t
              (setf (incudine-gui::bufs gui) bufs-a)
+             (setf curr-bufs bufs-b))))))
+
+(define-vug scope-vug ((numchans channel-number)
+                       (in channel-number)
+                       (gui incudine-gui::stethoscope)
+                       (size uint)
+                       (maxsize uint))
+  (with ((sample-idx 0)
+         (sample-max-idx (min size maxsize))
+         (curr-p t)
+         (bufs-a (cuda-gui::bufs-a gui))
+         (bufs-b (cuda-gui::bufs-b gui))
+         (curr-bufs (make-array numchans)))
+    (declare (uint sample-idx sample-max-idx) (boolean curr-p))
+    (initialize
+     (setf (incudine-gui::curr-bufs gui) bufs-b)
+     (setf curr-bufs bufs-a))
+    (dochannels (idx numchans)
+      (setf (buffer-value (svref curr-bufs idx) sample-idx)
+            (audio-in (+ in idx))))
+    (incf sample-idx)
+    (when (>= sample-idx sample-max-idx)
+      (reduce-warnings
+        (nrt-funcall
+          (lambda () (cuda-gui::signal! gui (cuda-gui::repaint-view)))))
+      (setf sample-idx 0)
+      (setf curr-p (not curr-p))
+      (cond (curr-p ;;; swap display and audio buffer
+             (setf (incudine-gui::curr-bufs gui) bufs-b)
+             (setf curr-bufs bufs-a))
+            (t
+             (setf (incudine-gui::curr-bufs gui) bufs-a)
              (setf curr-bufs bufs-b))))))
 
 ;;;          (nrt-funcall (lambda () (cuda-gui::gui-funcall (q+:repaint gui))))
