@@ -381,6 +381,7 @@
                 (q+:maximum scrollbar)))
          (new-size (round (+ 128 (* prop (- (bufmaxsize stethoscope) 128))))))
     (incudine:set-control (dsp-node-id stethoscope) :bufsize new-size)
+    (setf bufsize new-size)
     (q+:repaint (steth-view-pane stethoscope))))
 
 
