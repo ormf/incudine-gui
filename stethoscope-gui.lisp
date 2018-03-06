@@ -211,9 +211,14 @@
   (let ((*background-color* "background-color: #dbdbdb;"))
     (cudagui-tl-initializer stethoscope))
   (setf (main-widget (steth-view steth-view-pane)) stethoscope)
-;;;  (setf key-event (q+:install-event-filter *controller* stethoscope))
-  (q+:set-geometry stethoscope 30 30 480 480)
   (restart-stethoscope-dsp stethoscope :group dsp-group)
+  (sleep 0.2)
+  (let* ((scroll-x (scroll-x steth-view-pane)))
+    (q+:set-value
+     scroll-x
+     (round (map-value bufsize 128 bufmaxsize
+                       (q+:minimum scroll-x) (q+:maximum scroll-x)))))
+  (q+:set-geometry stethoscope 30 30 480 480)
   (setf (redraw? stethoscope) t))
 
 (define-override (stethoscope close-event) (ev)
@@ -300,6 +305,9 @@
     (sleep 0.2)
     (case (io-mode stethoscope)
       (:audio-out
+       (setf (num-chans stethoscope) (min (num-chans stethoscope) incudine::*number-of-output-bus-channels*))
+       (setf (maxval (num-chans-box (steth-ctl stethoscope))) incudine::*number-of-output-bus-channels*)
+       (q+:set-text (num-chans-box (steth-ctl stethoscope)) (format nil "~d" (num-chans stethoscope)))
        (scratch::audio-out-scope-dsp (num-chans stethoscope) (bus-num stethoscope) stethoscope
                            (bufsize stethoscope)
                            (bufmaxsize stethoscope)
@@ -308,6 +316,7 @@
                            :tail group
                            :id (dsp-node-id stethoscope)))
       (:bus
+       (setf (maxval (num-chans-box (steth-ctl stethoscope))) (chans-maxval stethoscope))
        (scratch::bus-scope-dsp (num-chans stethoscope) (bus-num stethoscope) stethoscope
                            (bufsize stethoscope)
                            (bufmaxsize stethoscope)
@@ -316,6 +325,9 @@
                            :tail group
                            :id (dsp-node-id stethoscope)))
       (t
+       (setf (num-chans stethoscope) (min (num-chans stethoscope) incudine::*number-of-input-bus-channels*))
+       (setf (maxval (num-chans-box (steth-ctl stethoscope))) incudine::*number-of-input-bus-channels*)
+       (q+:set-text (num-chans-box (steth-ctl stethoscope)) (format nil "~d" (num-chans stethoscope)))
        (scratch::audio-in-scope-dsp (num-chans stethoscope) (bus-num stethoscope) stethoscope
                            (bufsize stethoscope)
                            (bufmaxsize stethoscope)
@@ -359,25 +371,20 @@
         (textedit-parse-integer text (chans-minval stethoscope)))
   (incudine:set-control (dsp-node-id stethoscope) :bus-num bus-num))
 
-(defun normalize (val min max)
-  (/ (- val min) (- max min)))
-
-(define-slot (stethoscope x-scroll-changed) ((value int))
+(define-slot (stethoscope scroll-x-changed) ((value int))
   (declare (connected
             (scroll-x (steth-view-pane stethoscope))
             (value-changed int)))
   (let* ((scrollbar (scroll-x (steth-view-pane stethoscope)))
-         (prop (normalize
-                value
+         (prop (normalize value
                 (q+:minimum scrollbar)
                 (q+:maximum scrollbar)))
          (new-size (round (+ 128 (* prop (- (bufmaxsize stethoscope) 128))))))
-    (setf (bufsize stethoscope) new-size)
     (incudine:set-control (dsp-node-id stethoscope) :bufsize new-size)
     (q+:repaint (steth-view-pane stethoscope))))
 
 
-(define-slot (stethoscope y-scroll-changed) ((value int))
+(define-slot (stethoscope scroll-y-changed) ((value int))
   (declare (connected
              (scroll-y (steth-view-pane stethoscope))
             (value-changed int)))
@@ -395,7 +402,7 @@
 (defun scope (&key (id "Stethoscope") (group 400) (bus 0) (num-chans 2))
   (gui-funcall (create-tl-widget 'stethoscope id :group group :bus-num bus :num-chans num-chans)))
 
-;;; (scope :num-chans 2)
+;;; (scope :id :steth02 :num-chans 2)
 
 ;;; (close-all-guis)
 
