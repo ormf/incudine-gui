@@ -3,7 +3,7 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:incudine-gui)
-(in-readtable :qtools)
+(named-readtables:in-readtable :qt)
 
 (define-widget pushbutton (QPushButton)
   ((style :initform "

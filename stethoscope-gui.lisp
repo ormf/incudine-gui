@@ -3,7 +3,7 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:incudine-gui)
-(in-readtable :qtools)
+(named-readtables:in-readtable :qt)
 
 (defun find-node (node)
   (incudine:dograph (n)

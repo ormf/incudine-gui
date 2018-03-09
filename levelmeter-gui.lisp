@@ -3,7 +3,7 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:incudine-gui)
-(in-readtable :qtools)
+(named-readtables:in-readtable :qt)
 
 (define-widget levelmeter-main (Qwidget cudagui-tl-mixin)
   ((dsp-node-ids :initarg :dsp-node-ids :accessor dsp-node-ids)

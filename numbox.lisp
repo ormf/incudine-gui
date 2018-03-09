@@ -3,7 +3,7 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:incudine-gui)
-(in-readtable :qtools)
+(named-readtables:in-readtable :qt)
 
 (define-widget numbox (QLineEdit)
   ((minval :initform 0  :initarg :minval :accessor minval)
