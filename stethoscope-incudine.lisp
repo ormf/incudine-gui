@@ -110,7 +110,7 @@
                  (bufsize uint) (bufmaxsize uint) (process? boolean))
   (:defaults 2 8 nil 1024 8192 t)
   (if process?
-      (foreach-frame (bus-scope-vug numchans bus-num gui bufsize bufmaxsize))))
+      (foreach-frame (audio-in-scope-vug numchans bus-num gui bufsize bufmaxsize))))
 
 (dsp! audio-out-scope-dsp ((numchans channel-number) (bus-num channel-number) (gui incudine-gui::stethoscope)
                  (bufsize uint) (bufmaxsize uint) (process? boolean))

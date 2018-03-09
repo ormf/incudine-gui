@@ -4,7 +4,7 @@
 
 (defpackage #:incudine-gui
   (:nicknames #:cuda-gui)
-  (:use #:cl+qt)
+  (:use :cl :qt)
   (:export #:GUI-START
            #:GUI-STOP
            #:FIND-GUI

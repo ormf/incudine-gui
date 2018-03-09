@@ -3,7 +3,7 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:incudine-gui)
-(in-readtable :qtools)
+(named-readtables:in-readtable :qt)
 
 ;;; central registry for all guis. Entries have to be added in the gui
 ;;; instantiation code and removed in their removal code (reacting to

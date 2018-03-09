@@ -10,7 +10,7 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:incudine-gui)
-(in-readtable :qtools)
+(named-readtables:in-readtable :qt)
 
 (defclass cudagui-tl-mixin ()
   ((id :initform (error ":id required") :initarg :id :accessor id)
@@ -19,9 +19,9 @@
 
 (defun cudagui-tl-initializer (widget)
   (let ((id (id widget)))
-    (setf (q+:window-title widget) (format-title id ))
-    (q+:set-style-sheet widget *background-color*)
-    (q+:set-geometry widget 50 50 100 100)
+    (#_setWindowTitle widget (format-title id))
+    (#_setStyleSheet widget *background-color*)
+    (#_setGeometry widget 50 50 100 100)
     (unwind-protect
          (add-gui id widget)
       (if (gui-signal widget)
@@ -31,6 +31,6 @@
   "make, register and show instance of toplevel widget-class and
 return it. id has to be unique among all toplevel widgets."
   (with-controller ()
-    (q+:show (apply #'make-instance widget-class :gui-signal t :id id args)))
+    (#_show (apply #'make-instance widget-class :gui-signal t :id id args)))
   (incudine::sync-condition-wait *widget-finalized-sync*)
   (find-gui id))

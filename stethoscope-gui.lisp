@@ -14,13 +14,6 @@
 
 ;;(incudine:dump (incudine:node 0))
 
-(defun assert-active (node)
-  (loop
-     for n = incudine::*node-root* then (incudine::node-next n)
-     while n
-     until (equal node (incudine::node-id n))
-     finally (return n)))
-
 (define-widget stethoscope-ctl (QDialog) ;;; top area of stethoscope
   ((num-chans-box :initform (make-instance 'numbox) :accessor num-chans-box)
    (bus-num-box :initform (make-instance 'numbox) :accessor bus-num-box)
@@ -84,7 +77,7 @@
                      (height (q+:height stethoscope-view))
                      (num-chans (num-chans (main-widget stethoscope-view)))
                      (size (bufsize (main-widget stethoscope-view)))
-                     (y-scale (* height 0.5
+                     (y-scale (* height -0.5
                                  (- 1 (/ (q+:value (scroll-y (steth-view-pane (main-widget stethoscope-view)))) 10000)))))
                 (declare (fixnum width height num-chans size))
                 (setf (q+:background painter)
@@ -97,19 +90,21 @@
                    (let* ((num-points (min width size))
                           (x-inc (/ width num-points))
                           (idx-inc (/ size num-points)))
-                     (dotimes (i (length (curr-bufs (main-widget stethoscope-view))))
-                       (let ((y-pos (round (* (+ 0.5 i) (/ height num-chans))))
-                             (buf (aref (curr-bufs (main-widget stethoscope-view)) i)))
-                         (let* ((paint-path (q+:make-QPainterPath)))
-                           (q+:move-to paint-path width y-pos)
-                           (q+:line-to paint-path 0 y-pos)
-                           (dotimes (x num-points)
-                             (let ((amp (round (* y-scale (incudine:buffer-value buf (round (* x idx-inc)))))))
-                               (q+:line-to paint-path (* x x-inc)
-                                           (+ y-pos amp))))
-                           (q+:close-subpath paint-path)
-                           (q+:draw-path painter paint-path)
-                           (if fill? (q+:fill-path painter paint-path (q+:make-qbrush (q+:make-qcolor 165 141 0) (q+:qt.solid-pattern)))))))))
+                     (if t
+                         (dotimes (i (length (curr-bufs (main-widget stethoscope-view))))
+                           (let ((y-pos (round (* (+ 0.5 i) (/ height num-chans))))
+                                 (buf (aref (curr-bufs (main-widget stethoscope-view)) i)))
+                             (let* ((paint-path (q+:make-QPainterPath)))
+                               (q+:move-to paint-path width y-pos)
+                               (q+:line-to paint-path 0 y-pos)
+                               (dotimes (x num-points)
+                                 (let ((amp (round (* y-scale (incudine:buffer-value buf (round (* x idx-inc)))))))
+                                   (q+:line-to paint-path (* x x-inc)
+                                               (+ y-pos amp))))
+                               (q+:close-subpath paint-path)
+                               (q+:draw-path painter paint-path)
+                               (if fill? (q+:fill-path painter paint-path
+                                                       (q+:make-qbrush (q+:make-qcolor 165 141 0) (q+:qt.solid-pattern))))))))))
                   (:overlay
                    (let* ((num-points (min width size))
                           (x-inc (/ width num-points))
@@ -146,6 +141,17 @@
                              ;;; (if fill? (q+:fill-path painter paint-path (q+:make-qbrush (q+:make-qcolor 165 141 0) (q+:qt.solid-pattern))))
                                  ))))))))
             (warn "bufs not bound!")))))
+#|
+(defparameter *gui* (find-gui "Stethoscope"))
+
+(time (signal! *gui* (repaint-view)))
+
+(time (q+:repaint (steth-view (steth-view-pane *gui*))))
+
+(time (gui-funcall (lambda () (q+:set-value (scroll-x (steth-view-pane *gui*)) 10))))
+
+(q+:set-value (scroll-x (steth-view-pane *gui*)) 10)
+|#
 
 ;;(length (num-bufs (main-widget stethoscope-view)))
 
@@ -398,7 +404,11 @@
   (declare (connected
             stethoscope
             (repaint-view)))
-  (q+:repaint (steth-view (steth-view-pane stethoscope))))
+  (q+:repaint (steth-view (steth-view-pane stethoscope)))
+;;  (format t "repaint-event~%")
+  )
+
+;;;  (q+:repaint (steth-view (steth-view-pane stethoscope)))
 
 (defun scope (&key (id "Stethoscope") (group 400) (bus 0) (num-chans 2))
   (gui-funcall (create-tl-widget 'stethoscope id :group group :bus-num bus :num-chans num-chans)))

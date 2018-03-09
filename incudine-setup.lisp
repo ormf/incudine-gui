@@ -1,4 +1,4 @@
-;;;; levelmeter-gui.lisp
+;;;; incudine-setup.lisp
 ;;;;
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
@@ -16,13 +16,15 @@
 
 (dsp! cp-input-buses ((first-in-bus channel-number))
   (:defaults 0)
-  (foreach-input-channel
-    (setf (bus (+ current-channel first-in-bus)) (audio-in current-channel))))
+  (foreach-frame
+    (foreach-input-channel
+      (setf (bus (+ current-channel first-in-bus)) (audio-in current-channel)))))
 
 (dsp! cp-output-buses ((first-out-bus channel-number))
   (:defaults 8)
-  (foreach-channel
-    (setf (bus (+ current-channel first-out-bus)) (audio-out current-channel))))
+  (foreach-frame
+    (foreach-channel
+      (setf (bus (+ current-channel first-out-bus)) (audio-out current-channel)))))
 
 (defun setup-io ()
   (make-group 100)
@@ -35,3 +37,5 @@
 (defun node-free-unprotected ()
  (dogroup (n (node 200))
    (free n)))
+
+;;; (setup-io)
