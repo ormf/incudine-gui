@@ -9,69 +9,87 @@
 
 (deftype orientation () '(member :horizontal :vertical))
 
-(define-widget scroll-corner-box (QWidget) ())
+(defclass scroll-corner-box ()
+  ()
+  (:metaclass qt-class)
+  (:qt-superclass "QWidget"))
 
-(define-initializer (scroll-corner-box setup)
-  (q+:set-fixed-height scroll-corner-box *scrollbarwidth*)
-  (q+:set-fixed-width scroll-corner-box *scrollbarwidth*))
+(defmethod initialize-instance :after ((instance scroll-corner-box) &key parent)
+  (if parent
+      (new instance parent)
+      (new instance))
+  (#_setFixedHeight instance *scrollbarwidth*)
+  (#_setFixedWidth instance *scrollbarwidth*))
 
-(define-widget scrollbar (QScrollBar)
-  ((orientation :initform :horizontal
-                :type orientation :initarg :orientation :accessor orientation)))
+(defclass scrollbar ()
+  ((orientation :initform :horizontal :type orientation
+                :initarg :orientation :accessor orientation))
+  (:metaclass qt-class)
+  (:qt-superclass "QScrollBar")
+  (:override
+   ("paintEvent" paint-event)
+   ("mousePressEvent" mouse-press-event)
+   ("mouseMoveEvent" mouse-move-event)))
 
-(define-initializer (scrollbar setup)
-  (case orientation
-    (:vertical
-     (progn
-       (q+:set-orientation scrollbar (#_Vertical "Qt"))
-       (q+:set-fixed-width scrollbar *scrollbarwidth*)))
-    (t
-     (progn
-       (q+:set-orientation scrollbar (#_Horizontal "Qt"))
-       (q+:set-fixed-height scrollbar *scrollbarwidth*))))
-  (q+:set-style-sheet scrollbar
+(defmethod initialize-instance :after ((instance scrollbar) &key parent)
+  (if parent
+      (new instance parent)
+      (new instance))
+  (with-slots (orientation) instance
+    (case orientation
+      (:vertical
+       (progn
+         (#_setOrientation instance (#_Vertical "Qt"))
+         (#_setFixedWidth instance *scrollbarwidth*)))
+      (t
+       (progn
+         (#_setOrientation instance (#_Horizontal "Qt"))
+         (#_setFixedHeight instance *scrollbarwidth*)))))
+  (#_setStyleSheet instance
                       "border: 2px solid #838383; cursor-color: white; border-radius: 5px; selection-background-color: white")
-  (q+:set-minimum scrollbar 0)
-  (q+:set-maximum scrollbar 10000))
+  (#_setMinimum instance 0)
+  (#_setMaximum instance 10000))
 
-(define-override (scrollbar paint-event) (ev)
+(defmethod  paint-event ((instance scrollbar) ev)
   (declare (ignore ev))
-  (with-finalizing ((painter (q+:make-qpainter scrollbar)))
-    (let* ((width (q+:width scrollbar))
-           (height (q+:height scrollbar))
-           (max (q+:maximum scrollbar))
-           (min (q+:minimum scrollbar))
-           (prop (float (/ (- (q+:value scrollbar) min)
-                           (- max min)))))
-      (q+:set-render-hint painter (#_Antialiasing "QPainter"))
-      (q+:erase-rect painter (q+:rect scrollbar))
-      (let ((bg-path (q+:make-QPainterPath)))
-        (q+:add-Rounded-Rect bg-path (q+:make-qrectf (q+:rect scrollbar)) 5 5)
-        (q+:set-color (q+:pen painter) (q+:make-qcolor 131 131 131 255))
-        (q+:set-width (q+:pen painter) 2) ;;; border-color of scroll-background
-        (q+:fill-path painter bg-path (q+:make-qbrush (q+:make-qcolor 182 182 182 255))) ;;; background-color of scroll-background
-        (q+:draw-path painter bg-path))
-      (let ((thumb-path (q+:make-QPainterPath))
-            thumb-line-coords
-            thumb-rect)
-        (case (orientation scrollbar)
-          (:vertical
-           (let ((val-pos (round (+ 2 (* prop (- height 4))))))
-             (setf thumb-rect `(0 ,(max 1 (- val-pos 10))
-                                  14 ,(+ 9 (min 10 val-pos (- height val-pos)))))
-             (setf thumb-line-coords `(4 ,val-pos 11 ,val-pos))))
-          (t
-           (let ((val-pos (round (+ 2 (* prop (- width 4))))))
-             (setf thumb-rect `(,(max 1 (- val-pos 10))
-                                 0 ,(+ 9 (min 10 val-pos (- width val-pos))) 14))
-             (setf thumb-line-coords `(,val-pos 4 ,val-pos 11)))))
-        (q+:add-Rounded-Rect thumb-path (q+:make-qrectf (apply #'q+:make-qrect thumb-rect)) 2 2)
-        (q+:set-color (q+:pen painter) (q+:make-qcolor 153 153 153))
-        (q+:fill-path painter thumb-path (q+:make-qbrush (q+:make-qcolor 255 255 255 255)))
-        (q+:draw-path painter thumb-path)
-        (q+:set-color (q+:pen painter) (q+:make-qcolor 0 0 0 255))
-        (q+:set-width (q+:pen painter) 2)
-        (apply #'q+:draw-line painter thumb-line-coords)))))
+  (let* ((painter (#_new QPainter instance))
+         (width (#_Width instance))
+         (height (#_Height instance))
+         (max (#_Maximum instance))
+         (min (#_Minimum instance))
+         (prop (float (/ (- (#_Value instance) min)
+                         (- max min)))))
+    (#_setRenderHint painter (#_Antialiasing "QPainter"))
+    (#_eraseRect painter (#_Rect instance))
+    (let ((bg-path (#_new QPainterPath)))
+      (#_addRoundedRect bg-path (#_QRectf (#_Rect instance)) 5 5)
+      (#_setColor (#_Pen painter) (#_new QColor 131 131 131 255))
+      (#_setWidth (#_Pen painter) 2) ;;; border-color of scroll-background
+      (#_fillPath painter bg-path (#_new QBrush (#_new QColor 182 182 182 255))) ;;; background-color of scroll-background
+      (#_drawPath painter bg-path))
+    (let ((thumb-path (#_new QPainterPath))
+          thumb-rect
+          thumb-line-coords)
+      (case (orientation instance)
+        (:vertical
+         (let ((val-pos (round (+ 2 (* prop (- height 4))))))
+           (setf thumb-rect (#_new QRect 0 (max 1 (- val-pos 10))
+                                   14 (+ 9 (min 10 val-pos (- height val-pos)))))
+           (setf thumb-line-coords `(4 ,val-pos 11 ,val-pos))))
+        (t
+         (let ((val-pos (round (+ 2 (* prop (- width 4))))))
+           (setf thumb-rect (#_new QRect (max 1 (- val-pos 10)) 0
+                                   (+ 9 (min 10 val-pos (- width val-pos))) 14))
+           (setf thumb-line-coords `(,val-pos 4 ,val-pos 11)))))
+      (#_addRoundedRect thumb-path (#_new QRectf thumb-rect) 2 2)
+      (#_setColor (#_Pen painter) (#_new QColor 153 153 153))
+      (#_fillPath painter thumb-path (#_new QBrush (#_new QColor 255 255 255 255)))
+      (#_drawPath painter thumb-path)
+      (#_setColor (#_Pen painter) (#_new QColor 0 0 0 255))
+      (#_setWidth (#_Pen painter) 2)
+      (destructuring-bind (x1 y1 x2 y2) thumb-line-coords
+        (#_drawLine painter x1 y1 x2 y2)))
+    (#_end painter) ))
 
 #|
 (define-override (scrollbar paint-event) (ev)
@@ -191,35 +209,35 @@
 
 |#
 
-(define-override (scrollbar mouse-press-event) (ev)
-  (case (orientation scrollbar)
-    (:vertical (q+:set-value
-                scrollbar
-                (round (+ (q+:minimum scrollbar)
-                          (* (- (q+:maximum scrollbar)
-                                (q+:minimum scrollbar))
-                             (/ (q+:y ev) (q+:height scrollbar)))))))
-    (t (q+:set-value
-                scrollbar
-                (round (+ (q+:minimum scrollbar)
-                          (* (- (q+:maximum scrollbar)
-                                (q+:minimum scrollbar))
-                             (/ (q+:x ev) (q+:width scrollbar)))))))))
+(defmethod mouse-press-event ((instance scrollbar) ev)
+  (case (orientation instance)
+    (:vertical (#_setValue
+                instance
+                (round (+ (#_Minimum instance)
+                          (* (- (#_Maximum instance)
+                                (#_Minimum instance))
+                             (/ (#_y ev) (#_height instance)))))))
+    (t (#_setValue
+                instance
+                (round (+ (#_minimum instance)
+                          (* (- (#_Maximum instance)
+                                (#_Minimum instance))
+                             (/ (#_x ev) (#_width instance)))))))))
 
-(define-override (scrollbar mouse-move-event) (ev)
-  (case (orientation scrollbar)
-    (:vertical (q+:set-value
-                scrollbar
-                (round (+ (q+:minimum scrollbar)
-                          (* (- (q+:maximum scrollbar)
-                                (q+:minimum scrollbar))
-                             (/ (q+:y ev) (q+:height scrollbar)))))))
-    (t (q+:set-value
-                scrollbar
-                (round (+ (q+:minimum scrollbar)
-                          (* (- (q+:maximum scrollbar)
-                                (q+:minimum scrollbar))
-                             (/ (q+:x ev) (q+:width scrollbar)))))))))
+(defmethod mouse-move-event ((instance scrollbar) ev)
+  (case (orientation instance)
+    (:vertical (#_setValue
+                instance
+                (round (+ (#_Minimum instance)
+                          (* (- (#_Maximum instance)
+                                (#_Minimum instance))
+                             (/ (#_y ev) (#_Height instance)))))))
+    (t (#_setValue
+                instance
+                (round (+ (#_Minimum instance)
+                          (* (- (#_Maximum instance)
+                                (#_Minimum instance))
+                             (/ (#_x ev) (#_Width instance)))))))))
 
 
 

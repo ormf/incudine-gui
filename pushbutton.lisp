@@ -5,7 +5,7 @@
 (in-package #:incudine-gui)
 (named-readtables:in-readtable :qt)
 
-(define-widget pushbutton (QPushButton)
+(defclass pushbutton ()
   ((style :initform "
 QPushButton {
          border: 1px solid #838383; 
@@ -24,10 +24,15 @@ QPushButton::menu-indicator {
          left: -5px;
          top: 1px;
      }
-" :accessor style)))
+" :accessor style))
+  (:metaclass qt-class)
+  (:qt-superclass "QPushButton"))
 
-(define-initializer (pushbutton setup)
-  (q+:set-style-sheet pushbutton style)
-  (q+:set-Focus-Policy pushbutton (#_NoFocus "Qt"))
-  (q+:set-fixed-height pushbutton 25))
+(defmethod initialize-instance :after ((instance pushbutton) &key parent)
+  (if parent
+      (new instance parent)
+      (new instance))
+  (#_setStyleSheet instance (style instance))
+  (#_setFocusPolicy instance (#_NoFocus "Qt"))
+  (#_setFixedHeight instance 25))
 

@@ -5,8 +5,6 @@
 ;;; for file in standalone/*.so; do ln -s $file -t systems ../standalone/`echo $file | sed s/standalone\\\\/qtlibs\!//g`; done
 ;;; for file in standalone/*.so; do ln -s $file -t systems ../`echo $file | sed s/qtlibs\!//g`; done
 
-
-
 (defvar *controller* NIL)
 
 (defclass controller ()
