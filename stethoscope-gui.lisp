@@ -254,8 +254,8 @@
    ("tracksAction()" do-tracks-action)
    ("overlayAction()" do-overlay-action)
    ("xyAction()" do-xy-action)
-   ("numTracksChanged(char*)" num-tracks-changed)
-   ("busNumChanged(char*)" bus-num-changed)
+   ("numTracksChanged(QString)" num-tracks-changed)
+   ("busNumChanged(QString)" bus-num-changed)
    ("scrollXChanged(int)" scroll-x-changed)
    ("scrollYChanged(int)" scroll-y-changed)
    ("repaintView()" repaint-view))
@@ -348,17 +348,45 @@
                            (#_minimum scroll-x) (#_maximum scroll-x)))))
       (#_setGeometry instance 30 30 480 480)
       (setf (redraw? instance) t)
-      (connect (audio-in-action (steth-ctl instance)) "triggered()" instance "audioInAction()")
-      (connect (audio-out-action (steth-ctl instance)) "triggered()" instance "audioOutAction()")
-      (connect (bus-action (steth-ctl instance)) "triggered()" instance "busAction()")
-      (connect (tracks-action (steth-ctl instance)) "triggered()" instance "tracksAction()")
-      (connect (overlay-action (steth-ctl instance)) "triggered()" instance "overlayAction()")
-      (connect (xy-action (steth-ctl instance)) "triggered()" instance "xyAction()")
+      (connect (audio-in-action steth-ctl) "triggered()" instance "audioInAction()")
+      (connect (audio-out-action steth-ctl) "triggered()" instance "audioOutAction()")
+      (connect (bus-action steth-ctl) "triggered()" instance "busAction()")
+      (connect (tracks-action steth-ctl) "triggered()" instance "tracksAction()")
+      (connect (overlay-action steth-ctl) "triggered()" instance "overlayAction()")
+      (connect (xy-action steth-ctl) "triggered()" instance "xyAction()")
       (connect instance "toggleDspEvent()" instance "toggleDsp()")
+      (connect (num-chans-box steth-ctl) "textChanged(QString)" instance "numTracksChanged(QString)")
+      (connect (bus-num-box steth-ctl) "textChanged(QString)" instance "busNumChanged(QString)")
       (connect instance "repaintViewEvent()" instance "repaintView()")
+      (connect (scroll-x steth-view-pane) "valueChanged(int)" instance "scrollXChanged(int)")
       ;; (with-objects ((key (#_new QKeySequence (#_Key_Return "Qt"))))
       ;;   (#_new QShortcut key instance (QSLOT "toggleDsp()")))
       )))
+
+
+#|
+(define-slot (stethoscope bus-num-changed) ((text string))
+  (declare (connected
+            (bus-num-box (steth-ctl stethoscope))
+            (text-changed string)))
+  (setf bus-num
+        (textedit-parse-integer text (chans-minval stethoscope)))
+  (incudine:set-control (dsp-node-id stethoscope) :bus-num bus-num))
+
+(define-slot (stethoscope scroll-x-changed) ((value int))
+  (declare (connected
+            (scroll-x (steth-view-pane stethoscope))
+            (value-changed int)))
+  (let* ((scrollbar (scroll-x (steth-view-pane stethoscope)))
+         (prop (normalize value
+                (q+:minimum scrollbar)
+                (q+:maximum scrollbar)))
+         (new-size (round (+ 128 (* prop (- (bufmaxsize stethoscope) 128))))))
+    (incudine:set-control (dsp-node-id stethoscope) :bufsize new-size)
+    (setf bufsize new-size)
+    (q+:repaint (steth-view-pane stethoscope))))
+|#
+
 
 (defmethod close-event ((instance stethoscope ) ev)
   (declare (ignore ev))
@@ -447,6 +475,7 @@
 ;;; (#_Qt::Key_Space)
 
 (defun num-tracks-changed (stethoscope text)
+;;  (format t "num-tracks-changed called~%")
   (setf (redraw? stethoscope) nil)
   (setf (num-chans stethoscope) (textedit-parse-integer text (chans-minval stethoscope)))
   (restart-stethoscope-dsp stethoscope)
