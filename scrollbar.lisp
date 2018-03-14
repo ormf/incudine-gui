@@ -53,18 +53,18 @@
 (defmethod  paint-event ((instance scrollbar) ev)
   (declare (ignore ev))
   (let* ((painter (#_new QPainter instance))
-         (width (#_Width instance))
-         (height (#_Height instance))
-         (max (#_Maximum instance))
-         (min (#_Minimum instance))
-         (prop (float (/ (- (#_Value instance) min)
+         (width (#_width instance))
+         (height (#_height instance))
+         (max (#_maximum instance))
+         (min (#_minimum instance))
+         (prop (float (/ (- (#_value instance) min)
                          (- max min)))))
     (#_setRenderHint painter (#_Antialiasing "QPainter"))
-    (#_eraseRect painter (#_Rect instance))
+    (#_eraseRect painter (#_rect instance))
     (let ((bg-path (#_new QPainterPath)))
-      (#_addRoundedRect bg-path (#_QRectf (#_Rect instance)) 5 5)
-      (#_setColor (#_Pen painter) (#_new QColor 131 131 131 255))
-      (#_setWidth (#_Pen painter) 2) ;;; border-color of scroll-background
+      (#_addRoundedRect bg-path (#_new QRectF (#_rect instance)) 5 5)
+      (#_setColor (#_pen painter) (#_new QColor 131 131 131 255))
+      (#_setWidth (#_pen painter) 2) ;;; border-color of scroll-background
       (#_fillPath painter bg-path (#_new QBrush (#_new QColor 182 182 182 255))) ;;; background-color of scroll-background
       (#_drawPath painter bg-path))
     (let ((thumb-path (#_new QPainterPath))
@@ -81,12 +81,12 @@
            (setf thumb-rect (#_new QRect (max 1 (- val-pos 10)) 0
                                    (+ 9 (min 10 val-pos (- width val-pos))) 14))
            (setf thumb-line-coords `(,val-pos 4 ,val-pos 11)))))
-      (#_addRoundedRect thumb-path (#_new QRectf thumb-rect) 2 2)
-      (#_setColor (#_Pen painter) (#_new QColor 153 153 153))
+      (#_addRoundedRect thumb-path (#_new QRectF thumb-rect) 2 2)
+      (#_setColor (#_pen painter) (#_new QColor 153 153 153))
       (#_fillPath painter thumb-path (#_new QBrush (#_new QColor 255 255 255 255)))
       (#_drawPath painter thumb-path)
-      (#_setColor (#_Pen painter) (#_new QColor 0 0 0 255))
-      (#_setWidth (#_Pen painter) 2)
+      (#_setColor (#_pen painter) (#_new QColor 0 0 0 255))
+      (#_setWidth (#_pen painter) 2)
       (destructuring-bind (x1 y1 x2 y2) thumb-line-coords
         (#_drawLine painter x1 y1 x2 y2)))
     (#_end painter) ))
@@ -213,31 +213,31 @@
   (case (orientation instance)
     (:vertical (#_setValue
                 instance
-                (round (+ (#_Minimum instance)
-                          (* (- (#_Maximum instance)
-                                (#_Minimum instance))
+                (round (+ (#_minimum instance)
+                          (* (- (#_maximum instance)
+                                (#_minimum instance))
                              (/ (#_y ev) (#_height instance)))))))
     (t (#_setValue
                 instance
                 (round (+ (#_minimum instance)
-                          (* (- (#_Maximum instance)
-                                (#_Minimum instance))
+                          (* (- (#_maximum instance)
+                                (#_minimum instance))
                              (/ (#_x ev) (#_width instance)))))))))
 
 (defmethod mouse-move-event ((instance scrollbar) ev)
   (case (orientation instance)
     (:vertical (#_setValue
                 instance
-                (round (+ (#_Minimum instance)
-                          (* (- (#_Maximum instance)
-                                (#_Minimum instance))
-                             (/ (#_y ev) (#_Height instance)))))))
+                (round (+ (#_minimum instance)
+                          (* (- (#_maximum instance)
+                                (#_minimum instance))
+                             (/ (#_y ev) (#_height instance)))))))
     (t (#_setValue
                 instance
-                (round (+ (#_Minimum instance)
-                          (* (- (#_Maximum instance)
-                                (#_Minimum instance))
-                             (/ (#_x ev) (#_Width instance)))))))))
+                (round (+ (#_minimum instance)
+                          (* (- (#_maximum instance)
+                                (#_minimum instance))
+                             (/ (#_x ev) (#_width instance)))))))))
 
 
 

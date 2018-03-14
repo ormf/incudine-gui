@@ -28,7 +28,7 @@
     (when (>= sample-idx sample-max-idx)
       (reduce-warnings
         (nrt-funcall
-          (lambda () (cuda-gui::signal! gui (cuda-gui::repaint-view)))))
+          (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
       (setf sample-idx 0)
       (setf curr-p (not curr-p))
       (cond (curr-p ;;; swap display and audio buffer
@@ -60,7 +60,7 @@
     (when (>= sample-idx sample-max-idx)
       (reduce-warnings
         (nrt-funcall
-          (lambda () (cuda-gui::signal! gui (cuda-gui::repaint-view)))))
+          (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
       (setf sample-idx 0)
       (setf curr-p (not curr-p))
       (cond (curr-p ;;; swap display and audio buffer
@@ -92,7 +92,7 @@
     (when (>= sample-idx sample-max-idx)
       (reduce-warnings
         (nrt-funcall
-          (lambda () (cuda-gui::signal! gui (cuda-gui::repaint-view)))))
+          (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
       (setf sample-idx 0)
       (setf curr-p (not curr-p))
       (cond (curr-p ;;; swap display and audio buffer

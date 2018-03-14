@@ -209,6 +209,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
  
 (defun meters (&key (group 300) (num *number-of-input-bus-channels*) (id "Meters") (freq 5) (hop-size 2) (audio-bus 0))
   (let* ((gui (cuda-gui:meter-gui :num num :dsp-node-ids '() :id id)))
+    (sleep 1)
     (dotimes (idx num)
       (env-monometer freq (svref (incudine-gui::meters gui) idx)
                      (+ audio-bus idx) hop-size
@@ -219,7 +220,31 @@ The alternative is a foreign *GUI-BUS-POINTER*:
 
 #|
 
-(meters :id "meters03")
+(meters :id "meters" :num 8)
+
+(time (let ((meter (svref (cuda-gui::meters (cuda-gui::find-gui "meters")) 0)))
+ (nrt-funcall
+  (lambda ()
+    (cuda-gui:change-level meter (random 100))))))
+
+(trace cuda-gui::paint-event)
+
+(let ((meter (svref (cuda-gui::meters (cuda-gui::find-gui "meters")) 0)))
+ (nrt-funcall
+  (lambda ()
+    (cuda-gui:change-level meter (random 100)))))
+
+
+(time (let ((meter (svref (cuda-gui::meters (cuda-gui::find-gui "meters03")) 0)))
+ (cuda-gui:change-level meter (random 100))))
+
+(time (let ((meter (svref (cuda-gui::meters (cuda-gui::find-gui "meters03")) 0)))
+        (cuda-gui:change-level meter (random 100))))
+
+(defparameter *test* (cuda-gui:meter-gui :num 2 :dsp-node-ids '() :id 10))
+
+(incudine-gui::meters *test*)
+
 (dsp! monometer (freq (gui incudine-gui::levelmeter) (chan channel-number) (gui-idx channel-number))
    (:defaults 10 nil 0 0)
    (levelmeter (audio-in chan) freq gui))
@@ -240,4 +265,6 @@ The alternative is a foreign *GUI-BUS-POINTER*:
 (env-meters :num 16 :id "meters04" :freq 20 :hop-size 4)
 
 |#
+
+;;(setf (logger-level) :debug)
 
