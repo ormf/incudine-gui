@@ -101,23 +101,42 @@
   (setf (paint-path instance) (#_new QPainterPath))
   (setf (empty-path instance) (#_new QPainterPath)))
 
+
+#|
+(defun round-sample (x)
+  (declare (type (sample
+                  #.(coerce (ash most-negative-fixnum -1) 'sample)
+                  #.(coerce (ash most-positive-fixnum -1) 'sample))
+                 x))
+  (multiple-value-bind (result rem) (round x)
+    (declare (ignore rem))
+    result))
+|#
+
+;;; (declaim (notinline draw-scope))
 (defun draw-scope (num-points idx-inc x-inc y-pos y-scale buf paint-path fn)
+ (declare  (optimize (speed 3) (safety 0))
+           ((single-float -30.0 30.0) idx-inc x-inc)
+           ((single-float -2.0 2.0) y-scale)
+           (function fn)
+           ((integer 0 10000) y-pos num-points))
   (dotimes (x num-points)
     (let* (
            (amp
-              (round (* y-scale
-                        (incudine:buffer-value
-                         buf
-                         (round (* x idx-inc))))))
-             (x-eff (* x x-inc))
-             (y-eff (+ y-pos amp)))
+            (round (* y-scale
+                      (incudine:buffer-value
+                       buf
+                       (round (* x idx-inc))))))
+           (x-eff (round (* x x-inc)))
+           (y-eff (+ y-pos amp)))
+      (declare (fixnum amp x-eff y-eff))
       (funcall fn paint-path `(,x-eff ,y-eff))
 ;;;        (#_lineTo paint-path x-eff y-eff)
-        )))
+      )))
 
 (declaim (inline paint-event))
 (defmethod paint-event ((instance stethoscope-view) ev)
-  (declare (ignore ev) ;;(optimize (speed 3))
+  (declare (ignore ev) (optimize (speed 3))
            )
   (let ((stethoscope (main-widget instance)))
     (if (redraw? stethoscope)
@@ -129,10 +148,11 @@
                      (height (#_height instance))
                      (num-chans (num-chans (main-widget instance)))
                      (size (bufsize (main-widget instance)))
-                     (y-scale (* height -0.5
-                                 (- 1 (/ (#_value (scroll-y (steth-view-pane
-                                                             (main-widget instance))))
-                                         10000)))))
+                     (y-scale (float (* height -0.5
+                                        (- 1 (/ (#_value (scroll-y (steth-view-pane
+                                                                    (main-widget instance))))
+                                                10000)))
+                                     1.0)))
                 (declare (fixnum width height num-chans size))
                 (#_begin painter instance)
                 (#_setBackground painter background-brush)
@@ -143,8 +163,10 @@
                 (case (draw-mode main-widget)
                   (:tracks
                    (let* ((num-points (min width size))
-                          (x-inc (/ width num-points))
-                          (idx-inc (/ size num-points)))
+                          (x-inc (float (/ width num-points) 1.0))
+                          (idx-inc (float (/ size num-points) 1.0)))
+                     (declare (integer num-points)
+                              ((single-float -30.0 30.0) idx-inc x-inc))
                      (if t
                          (dotimes (i (length (curr-bufs (main-widget instance))))
                            (let ((y-pos (round (* (+ 0.5 i) (/ height num-chans))))
@@ -604,7 +626,7 @@
 
 (incudine:set-control (dsp-node-id (find-gui "Stethoscope")) :process? t)
 
-(toggle-dsp (find-gui :scope02))
+(toggle-dsp (find-gui "Stethoscope"))
 
 (let* ((gui (find-gui :scope02))
        (curr-buf (svref (curr-bufs gui) 0)))
@@ -627,7 +649,7 @@
 
 (progn
   (sb-profile:reset)
-  (paint-event (steth-view (steth-view-pane (find-gui :scope02))) nil)
+  (paint-event (steth-view (steth-view-pane (find-gui "Stethoscope"))) nil)
   (format t "~%")
   (sb-profile:report :print-no-call-list nil))
 
