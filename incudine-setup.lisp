@@ -39,3 +39,7 @@
    (free n)))
 
 ;;; (setup-io)
+;;; (block-size)
+;;; (set-rt-block-size 256)
+;;; (rt-start)
+
