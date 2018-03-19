@@ -1,4 +1,4 @@
-;;;; stethoscope-incudine.lisp
+1;;;; stethoscope-incudine.lisp
 ;;;;
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
@@ -12,12 +12,14 @@
                        (size uint)
                        (maxsize uint))
   (with ((sample-idx 0)
+         (tick-idx 0)
+         (screen-maxtick (sample->fixnum (/ *sample-rate* 60)) )
          (sample-max-idx (min size maxsize))
          (curr-p t)
          (bufs-a (cuda-gui::bufs-a gui))
          (bufs-b (cuda-gui::bufs-b gui))
          (curr-bufs (make-array numchans)))
-    (declare (uint sample-idx sample-max-idx) (boolean curr-p))
+    (declare (uint sample-idx sample-max-idx tick-idx screen-maxtick) (boolean curr-p))
     (initialize
      (setf (incudine-gui::curr-bufs gui) bufs-b)
      (setf curr-bufs bufs-a))
@@ -25,18 +27,21 @@
       (setf (buffer-value (svref curr-bufs idx) sample-idx)
             (audio-out (+ in idx))))
     (incf sample-idx)
+    (incf tick-idx)
     (when (>= sample-idx sample-max-idx)
-      (reduce-warnings
-        (nrt-funcall
-          (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
       (setf sample-idx 0)
-      (setf curr-p (not curr-p))
-      (cond (curr-p ;;; swap display and audio buffer
-             (setf (incudine-gui::curr-bufs gui) bufs-b)
-             (setf curr-bufs bufs-a))
-            (t
-             (setf (incudine-gui::curr-bufs gui) bufs-a)
-             (setf curr-bufs bufs-b))))))
+      (when (> tick-idx screen-maxtick)
+        (setf tick-idx 0)
+        (reduce-warnings
+          (nrt-funcall
+           (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
+        (setf curr-p (not curr-p))
+        (cond (curr-p ;;; swap display and audio buffer
+               (setf (incudine-gui::curr-bufs gui) bufs-b)
+               (setf curr-bufs bufs-a))
+              (t
+               (setf (incudine-gui::curr-bufs gui) bufs-a)
+               (setf curr-bufs bufs-b)))))))
 
 (define-vug audio-in-scope-vug ((numchans channel-number)
                        (in channel-number)
