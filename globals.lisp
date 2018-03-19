@@ -5,4 +5,5 @@
 (in-package #:incudine-gui)
 (named-readtables:in-readtable :qt)
 
+(defvar *screen-refresh-freq* 60)
 (defvar *background-color* "background-color: #202020;")

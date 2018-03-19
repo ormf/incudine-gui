@@ -13,13 +13,13 @@
                        (maxsize uint))
   (with ((sample-idx 0)
          (tick-idx 0)
-         (screen-maxtick (sample->fixnum (/ *sample-rate* 60)) )
+         (screen-mintick (sample->fixnum (/ *sample-rate* cuda-gui::*screen-refresh-freq*)) )
          (sample-max-idx (min size maxsize))
          (curr-p t)
          (bufs-a (cuda-gui::bufs-a gui))
          (bufs-b (cuda-gui::bufs-b gui))
          (curr-bufs (make-array numchans)))
-    (declare (uint sample-idx sample-max-idx tick-idx screen-maxtick) (boolean curr-p))
+    (declare (uint sample-idx sample-max-idx tick-idx screen-mintick) (boolean curr-p))
     (initialize
      (setf (incudine-gui::curr-bufs gui) bufs-b)
      (setf curr-bufs bufs-a))
@@ -30,7 +30,7 @@
     (incf tick-idx)
     (when (>= sample-idx sample-max-idx)
       (setf sample-idx 0)
-      (when (> tick-idx screen-maxtick)
+      (when (> tick-idx screen-mintick)
         (setf tick-idx 0)
         (reduce-warnings
           (nrt-funcall
