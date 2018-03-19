@@ -1,3 +1,4 @@
+
 ;;;; incudine-setup.lisp
 ;;;;
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
@@ -21,9 +22,7 @@
   (:defaults 0)
   (foreach-frame
     (dochannels (current-channel *number-of-input-bus-channels*)
-      (setf (bus (+ current-channel first-in-bus)) (audio-in current-channel))))
-)
-
+      (setf (bus (+ current-channel first-in-bus)) (audio-in current-channel)))))
 
 (dsp! cp-output-buses ((first-out-bus channel-number))
   (:defaults 8)
@@ -32,6 +31,7 @@
       (setf (bus (+ current-channel first-out-bus)) (audio-out current-channel)))))
 
 (defun setup-io ()
+  (free 0)
   (make-group 100)
   (make-group 200 :after 100)
   (make-group 300 :after 200)

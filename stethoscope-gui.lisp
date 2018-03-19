@@ -5,16 +5,12 @@
 (in-package #:incudine-gui)
 (named-readtables:in-readtable :qt)
 
-(defun find-node (node)
-  (incudine:dograph (n)
-    (when (equal node (incudine:node-id n))
-      (return n))))
+;;;
+;;; stethoscope-ctl
+;;;
+;;; top row of stethoscope window with bus and view controls
 
-;; (assert-active (dsp-node-id (find-gui "Stethoscope")))
-
-;;(incudine:dump (incudine:node 0))
-
-(defclass stethoscope-ctl () ;;; top area of stethoscope
+(defclass stethoscope-ctl () 
   ((num-chans-box :initform (make-instance 'numbox) :accessor num-chans-box)
    (bus-num-box :initform (make-instance 'numbox) :accessor bus-num-box)
    (mode-button :initform (make-instance 'pushbutton) :accessor mode-button)
@@ -29,41 +25,27 @@
   (:metaclass qt-class)
   (:qt-superclass "QDialog"))
 
+(defmacro assign-menu-action (slot menu action)
+  `(progn
+     (setf ,slot ,action)
+     (#_addAction ,menu ,slot)))
+
 (defmethod initialize-instance :after ((instance stethoscope-ctl) &key parent)
   (if parent
       (new instance parent)
       (new instance))
-  (with-slots (layout
-               audio-in-action
-               audio-out-action
-               bus-action
-               tracks-action
-               overlay-action
-               xy-action
-               io-button
-               mode-button
-               bus-num-box
-               num-chans-box)
-      instance
-    (let ((io-menu (#_new QMenu)))
-      (setf layout (#_new QHBoxLayout instance))
-      (setf audio-in-action (#_new QAction "Audio in" io-menu))
-      (setf audio-out-action (#_new QAction "Audio out" io-menu))
-      (setf bus-action (#_new QAction "Bus" io-menu))
-      (#_addAction io-menu audio-in-action)
-      (#_addAction io-menu audio-out-action)
-      (#_addAction io-menu bus-action)
-      (#_setMenu io-button io-menu)
-      (#_setText io-button "Audio in"))
-    (let ((view-menu (#_new QMenu)))
-      (setf tracks-action (#_new QAction "Tracks" view-menu))
-      (setf overlay-action (#_new QAction "Overlay" view-menu))
-      (setf xy-action (#_new QAction "X/Y" view-menu))
-      (#_addAction view-menu tracks-action)
-      (#_addAction view-menu overlay-action)
-      (#_addAction view-menu xy-action)
-      (#_setMenu mode-button view-menu)
-      (#_setText mode-button "Tracks"))
+  (with-slots (layout audio-in-action audio-out-action bus-action tracks-action
+                      overlay-action xy-action io-button mode-button
+                      bus-num-box num-chans-box) instance
+    (make-button-menu io-button :actions
+                      ((audio-in-action "Audio In")
+                       (audio-out-action "Audio Out")
+                       (bus-action "Bus")))
+    (make-button-menu mode-button :actions
+                      ((tracks-action "Tracks")
+                       (overlay-action  "Overlay")
+                       (xy-action "X/Y")))
+    (setf layout (#_new QHBoxLayout instance))
     (#_addWidget layout bus-num-box)
     (#_addWidget layout num-chans-box)
     (#_addWidget layout io-button)
@@ -75,6 +57,10 @@
     (#_setFixedWidth mode-button 85)
     (#_setFixedWidth io-button 95)
     (#_setFixedHeight instance 25)))
+
+;;;
+;;; stethoscope-view
+;;;
 
 (defclass stethoscope-view () ;;; the plot area
   ((style :initform "background-color: black;" :accessor style)
@@ -101,31 +87,10 @@
   (setf (paint-path instance) (#_new QPainterPath))
   (setf (empty-path instance) (#_new QPainterPath)))
 
-
-#|
-(defun round-sample (x)
-  (declare (type (sample
-                  #.(coerce (ash most-negative-fixnum -1) 'sample)
-                  #.(coerce (ash most-positive-fixnum -1) 'sample))
-                 x))
-  (multiple-value-bind (result rem) (round x)
-    (declare (ignore rem))
-    result))
-|#
-
-
-(defun round-test-2 (buf scl x inc)
-  (declare (incudine:buffer buf) (single-float scl inc) (fixnum x)
-           (optimize speed (safety 0)))
-  (incudine::sample->fixnum (* scl (incudine:buffer-value buf (round (* x inc)))) :roundp t))
-
-
- 
-;;; (optimize speed (safety 0))
-
-(declaim (notinline draw-scope))
+(declaim (inline draw-scope))
 (defun draw-scope(num-points idx-inc x-inc y-pos y-scale buf paint-path)
-  (declare (double-float idx-inc x-inc y-scale y-pos)
+  (declare (optimize speed (safety 0))
+           (double-float idx-inc x-inc y-scale y-pos)
            ((integer 0 10000) num-points))
   (let* ((method (qt::find-applicable-method
                   paint-path "lineTo" '(0 0) nil))
@@ -144,8 +109,7 @@
 
 (declaim (inline paint-event))
 (defmethod paint-event ((instance stethoscope-view) ev)
-  (declare (ignore ev) (optimize (speed 3))
-           )
+  (declare (ignore ev) (optimize (speed 3)))
   (let ((stethoscope (main-widget instance)))
     (if (redraw? stethoscope)
         (if (slot-boundp stethoscope 'curr-bufs)
@@ -166,7 +130,6 @@
                 (#_eraseRect painter (#_rect instance))
                 (#_setColor (#_pen painter) foreground-color)
                 (#_setWidth (#_pen painter) 1)
-
                 (case (draw-mode main-widget)
                   (:tracks
                    (let* ((num-points (min width size))
@@ -178,8 +141,7 @@
                          (dotimes (i (length (curr-bufs (main-widget instance))))
                            (let ((y-pos (float (* (+ 0.5 i) (/ height num-chans)) 1.0d0))
                                  (buf (aref (curr-bufs (main-widget instance)) i)))
-                             (with-slots (paint-path empty-path) instance
-                               (setf paint-path (#_QPainterPath empty-path))
+                             (with-paint-path (paint-path)
                                (#_moveTo paint-path width y-pos)
                                (#_lineTo paint-path 0 y-pos)
                                (draw-scope num-points idx-inc x-inc
@@ -187,7 +149,8 @@
                                (#_closeSubpath paint-path)
                                (#_drawPath painter paint-path)
                                (if fill? (#_fillPath painter paint-path
-                                                     fill-brush))))))))
+                                                     fill-brush))
+                               ))))))
                   (:overlay
                    (let* ((num-points (min width size))
                           (x-inc (/ width num-points))
@@ -195,8 +158,7 @@
                      (dotimes (i (length (curr-bufs (main-widget instance))))
                        (let ((y-pos (round (* 0.5 height)))
                              (buf (aref (curr-bufs (main-widget instance)) i)))
-                         (with-slots (paint-path empty-path) instance
-                           (setf paint-path (#_QPainterPath empty-path))
+                         (with-paint-path (paint-path)
                            (#_moveTo paint-path width y-pos)
                            (#_lineTo paint-path 0 y-pos)
                            (dotimes (x num-points)
@@ -210,8 +172,7 @@
                          (if (> (length (curr-bufs (main-widget instance))) 1)
                              (let ((x-buf (aref (curr-bufs (main-widget instance)) 0))
                                    (y-buf (aref (curr-bufs (main-widget instance)) 1)))
-                               (with-slots (paint-path empty-path) instance
-                                 (setf paint-path (#_QPainterPath empty-path))
+                               (with-paint-path (paint-path)
                                  (let* ((x-offs (round (/ width 2)))
                                         (y-offs (round (/ height 2))))
                                    (#_moveTo paint-path
@@ -225,24 +186,12 @@
                                    (#_drawPath painter paint-path)
 ;;; (if fill? (#_fill-path painter paint-path fill-brush))
                                    )))))))
-
-                                 (#_end painter)
-                )
-              )
+                (#_end painter)))
             (warn "bufs not bound!")))))
-#|
-(defparameter *gui* (find-gui :scope01))
 
-(time (emit-signal *gui* "repaintViewEvent()"))
-
-(time (#_repaint (steth-view (steth-view-pane *gui*))))
-
-(time (gui-funcall (lambda () (#_set-value (scroll-x (steth-view-pane *gui*)) 10))))
-
-(#_set-value (scroll-x (steth-view-pane *gui*)) 10)
-|#
-
-;;(length (num-bufs (main-widget stethoscope-view)))
+;;;
+;;; stethoscope-view-pane
+;;;
 
 (defclass stethoscope-view-pane () ;;; plot area with scrollbars
   ((steth-view :initform (make-instance 'stethoscope-view) :accessor steth-view)
@@ -272,6 +221,10 @@
       (#_addWidget inner2 scroll-y)
       (#_addWidget inner2 (make-instance 'scroll-corner-box))
       (#_addLayout layout inner2))))
+
+;;;
+;;; stethoscope
+;;;
 
 (defclass stethoscope (cudagui-tl-mixin)
   ((dsp-node-id :initform nil :accessor dsp-node-id)
@@ -417,31 +370,6 @@
       ;;   (#_new QShortcut key instance (QSLOT "toggleDsp()")))
       )))
 
-
-#|
-(define-slot (stethoscope bus-num-changed) ((text string))
-  (declare (connected
-            (bus-num-box (steth-ctl stethoscope))
-            (text-changed string)))
-  (setf bus-num
-        (textedit-parse-integer text (chans-minval stethoscope)))
-  (incudine:set-control (dsp-node-id stethoscope) :bus-num bus-num))
-
-(define-slot (stethoscope scroll-x-changed) ((value int))
-  (declare (connected
-            (scroll-x (steth-view-pane stethoscope))
-            (value-changed int)))
-  (let* ((scrollbar (scroll-x (steth-view-pane stethoscope)))
-         (prop (normalize value
-                (q+:minimum scrollbar)
-                (q+:maximum scrollbar)))
-         (new-size (round (+ 128 (* prop (- (bufmaxsize stethoscope) 128))))))
-    (incudine:set-control (dsp-node-id stethoscope) :bufsize new-size)
-    (setf bufsize new-size)
-    (q+:repaint (steth-view-pane stethoscope))))
-|#
-
-
 (defmethod close-event ((instance stethoscope ) ev)
   (declare (ignore ev))
   (with-slots (dsp-node-id) instance
@@ -449,13 +377,6 @@
     (remove-gui (id instance))
     (and (find-node dsp-node-id) (incudine:free dsp-node-id))
     (call-next-qmethod)))
-
-
-;;; 
-
-
-
-;;; connect(gameQuit, SIGNAL(triggered()), this, SLOT(close()));
 
 (defun do-audio-in-action (stethoscope)
   (setf (redraw? stethoscope) nil)
@@ -512,7 +433,7 @@
                         :process? (toggle (process? stethoscope))))
 
 (defmethod key-press-event ((instance stethoscope) ev)
-  (format t "~a~%" (#_key ev))
+;;  (format t "~a~%" (#_key ev))
   (cond ;; Signal Ctl-Space pressed.
         ((equal (#_key ev) 32)
          (call-next-qmethod)
@@ -520,16 +441,6 @@
         ;; Delegate standard.
         (T
          (call-next-qmethod))))
-
-#|
-(toggle-dsp (find-gui "Stethoscope"))
-
-
-(with-objects ((key (#_new QKeySequence (#_Key_Enter "Qt"))))
-  (#_new QShortcut key instance (QSLOT "toggleDSP()")))
-|#
-
-;;; (#_Qt::Key_Space)
 
 (defun num-tracks-changed (stethoscope text)
 ;;  (format t "num-tracks-changed called~%")
@@ -555,7 +466,6 @@
     (setf (bufsize stethoscope) new-size)
     (#_repaint (steth-view-pane stethoscope))))
 
-
 (defun scroll-y-changed (stethoscope value)
   (declare (ignore value))
   (#_repaint (steth-view-pane stethoscope)))
@@ -566,21 +476,26 @@
   )
 
 (defun set-scroll-x (stethoscope value)
-  (#_setValue (scroll-x
-               (steth-view-pane
-                stethoscope))
-              value))
-
-;;;  (#_repaint (steth-view (steth-view-pane stethoscope)))
+  (#_setValue (scroll-x (steth-view-pane stethoscope)) value))
 
  (defun scope (&key (id "Stethoscope") (group 400) (bus 0) (num-chans 2))
   (gui-funcall (create-tl-widget 'stethoscope id :group group :bus-num bus :num-chans num-chans)))
 
+#|
+
+;;;  (#_repaint (steth-view (steth-view-pane stethoscope)))
+
 ;;; (scope :id "Stethoscope" :num-chans 2)
+;;; (setf (scratch::logger-level) :debug)
 ;;; (toggle-dsp (find-gui "Stethoscope"))
 ;;; (close-all-guis)
 
-#|
+(toggle-dsp (find-gui "Stethoscope"))
+
+
+(with-objects ((key (#_new QKeySequence (#_Key_Enter "Qt"))))
+  (#_new QShortcut key instance (QSLOT "toggleDSP()")))
+;;; (#_Qt::Key_Space)
 
 (remove-gui "Stethoscope")
 
@@ -666,6 +581,11 @@
   (paint-event (steth-view (steth-view-pane (find-gui "Stethoscope"))) nil)
   (format t "~%")
   (sb-profile:report :print-no-call-list nil))
+
+(time
+ (dotimes (i 10)
+   (paint-event (steth-view (steth-view-pane (find-gui "Stethoscope"))) nil)))
+
 
 (trace draw-scope)
 
@@ -768,5 +688,65 @@
 
 
 (#_setValue (scroll-x (steth-view-pane (find-gui "Stethoscope"))) 10000)
+
+
+;; (assert-active (dsp-node-id (find-gui "Stethoscope")))
+
+;;(incudine:dump (incudine:node 0))
+(define-slot (stethoscope bus-num-changed) ((text string))
+  (declare (connected
+            (bus-num-box (steth-ctl stethoscope))
+            (text-changed string)))
+  (setf bus-num
+        (textedit-parse-integer text (chans-minval stethoscope)))
+  (incudine:set-control (dsp-node-id stethoscope) :bus-num bus-num))
+
+(define-slot (stethoscope scroll-x-changed) ((value int))
+  (declare (connected
+            (scroll-x (steth-view-pane stethoscope))
+            (value-changed int)))
+  (let* ((scrollbar (scroll-x (steth-view-pane stethoscope)))
+         (prop (normalize value
+                (q+:minimum scrollbar)
+                (q+:maximum scrollbar)))
+         (new-size (round (+ 128 (* prop (- (bufmaxsize stethoscope) 128))))))
+    (incudine:set-control (dsp-node-id stethoscope) :bufsize new-size)
+    (setf bufsize new-size)
+    (q+:repaint (steth-view-pane stethoscope))))
+
+;;; connect(gameQuit, SIGNAL(triggered()), this, SLOT(close()));
+
+(defun round-test-2 (buf scl x inc)
+  (declare (incudine:buffer buf) (single-float scl inc) (fixnum x)
+           (optimize speed (safety 0)))
+  (incudine::sample->fixnum (* scl (incudine:buffer-value buf (round (* x inc)))) :roundp t))
+
+
+(defun round-sample (x)
+  (declare (type (sample
+                  #.(coerce (ash most-negative-fixnum -1) 'sample)
+                  #.(coerce (ash most-positive-fixnum -1) 'sample))
+                 x))
+  (multiple-value-bind (result rem) (round x)
+    (declare (ignore rem))
+    result))
+
+
+
+(defparameter *gui* (find-gui :scope01))
+
+(time (emit-signal *gui* "repaintViewEvent()"))
+
+(time (#_repaint (steth-view (steth-view-pane *gui*))))
+
+(time (gui-funcall (lambda () (#_set-value (scroll-x (steth-view-pane *gui*)) 10))))
+
+(#_set-value (scroll-x (steth-view-pane *gui*)) 10)
+
+;;(length (num-bufs (main-widget stethoscope-view)))
+
+(make-button-menu button :actions ((audio-in-action "Audio In")
+                                   (audio-out-action "Audio Out")
+                                   (bus-action "Bus")))
 
 |#

@@ -6,4 +6,3 @@
 (named-readtables:in-readtable :qt)
 
 (defvar *background-color* "background-color: #202020;")
-
