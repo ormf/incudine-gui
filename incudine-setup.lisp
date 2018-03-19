@@ -14,11 +14,16 @@
                   (ignorable current-channel))
          ,@body))))
 
+
+
+
 (dsp! cp-input-buses ((first-in-bus channel-number))
   (:defaults 0)
   (foreach-frame
-    (foreach-input-channel
-      (setf (bus (+ current-channel first-in-bus)) (audio-in current-channel)))))
+    (dochannels (current-channel *number-of-input-bus-channels*)
+      (setf (bus (+ current-channel first-in-bus)) (audio-in current-channel))))
+)
+
 
 (dsp! cp-output-buses ((first-out-bus channel-number))
   (:defaults 8)

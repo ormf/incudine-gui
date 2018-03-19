@@ -17,6 +17,15 @@ dest-min and dest-max (linear)."
      (* (normalize src-val src-min src-max)
         (- dest-max dest-min))))
 
+(declaim (inline round-single-float))
+(defun round-single-float (x)
+  (declare (type (single-float
+                  #.(coerce (ash most-negative-fixnum -1) 'single-float)
+                  #.(coerce (ash most-positive-fixnum -1) 'single-float)) x))
+  (multiple-value-bind (result rem) (round x)
+    (declare (ignore rem))
+    result))
+
 (defun format-title (title)
   (cond
     ((keywordp title) (string-downcase (format nil "~s" title)))
