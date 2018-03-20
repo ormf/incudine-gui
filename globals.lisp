@@ -7,3 +7,5 @@
 
 (defvar *screen-refresh-freq* 60)
 (defvar *background-color* "background-color: #202020;")
+;; (defconstant +black+ (#_new QColor 0 0 0 255))
+

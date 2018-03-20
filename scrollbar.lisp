@@ -32,7 +32,7 @@
                     :accessor thumb-pen-color)
    (thumb-brush :initform (#_new QBrush (#_new QColor 255 255 255 255))
                 :accessor thumb-brush)
-   (line-color :initform +black+
+   (line-color :initform (#_new QColor 0 0 0 255)
                :accessor line-color))
   (:metaclass qt-class)
   (:qt-superclass "QScrollBar")

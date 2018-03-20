@@ -66,8 +66,8 @@
   ((style :initform "background-color: black;" :accessor style)
    (fill? :initform t :accessor fill?)
    (main-widget :accessor main-widget)
-   (painter :accessor painter)
-   (background-brush :initform (#_new QBrush (#_new QColor 0 0 0 255) (#_Qt::SolidPattern)) :accessor background-brush)
+   (painter :accessor painter :type 'qobject)
+   (background-brush  :accessor background-brush)
    (foreground-color :initform (#_new QColor 255 218 0 255) :accessor foreground-color)
    (fill-brush :initform (#_new QBrush (#_new QColor 165 141 0) (#_Qt::SolidPattern)) :accessor foreground-color)
    (paint-path :accessor paint-path)
@@ -85,27 +85,24 @@
   (#_setStyleSheet instance (style instance))
   (setf (painter instance) (#_new QPainter instance))
   (setf (paint-path instance) (#_new QPainterPath))
-  (setf (empty-path instance) (#_new QPainterPath)))
+  (setf (empty-path instance) (#_new QPainterPath))
+  (setf (background-brush instance) (#_new QBrush (#_new QColor 0 0 0 255) (#_Qt::SolidPattern))))
 
 (declaim (inline draw-scope))
 (defun draw-scope(num-points idx-inc x-inc y-pos y-scale buf paint-path)
   (declare (optimize speed (safety 0))
            (double-float idx-inc x-inc y-scale y-pos)
-           ((integer 0 10000) num-points))
-  (let* ((method (qt::find-applicable-method
-                  paint-path "lineTo" '(0 0) nil))
-         (method-idx (qt::qmethod-classfn-index method))
-         (class-fn (qt::qclass-trampoline-fun (qt::qmethod-class method)))
-         (object (slot-value paint-path 'qt::pointer)))
-    (dotimes (x num-points)
-      (let* ((amp (* y-scale
-                     (incudine:buffer-value
-                      buf
-                      (incudine::sample->fixnum (* x idx-inc) :roundp t))))
-             (x-eff (float (* x x-inc) 1.0d0))
-             (y-eff (float (+ y-pos amp) 1.0d0)))
-        (declare (double-float amp x-eff y-eff))
-        (qt::my-line-to class-fn method-idx object x-eff y-eff)))))
+           ((integer 0 10000) num-points)
+           (qobject paint-path))
+  (dotimes (x num-points)
+    (let* ((amp (* y-scale
+                   (incudine:buffer-value
+                    buf
+                    (incudine::sample->fixnum (* x idx-inc) :roundp t))))
+           (x-eff (float (* x x-inc) 1.0d0))
+           (y-eff (float (+ y-pos amp) 1.0d0)))
+      (declare (double-float amp x-eff y-eff))
+      (qt::fast-line-to paint-path x-eff y-eff))))
 
 (declaim (inline paint-event))
 (defmethod paint-event ((instance stethoscope-view) ev)
@@ -126,9 +123,9 @@
                                          10000)))))
                 (declare (fixnum width height num-chans size))
                 (#_begin painter instance)
-                (#_setBackground painter background-brush)
                 (#_eraseRect painter (#_rect instance))
                 (#_setColor (#_pen painter) foreground-color)
+                (#_setBrush painter (#_Qt::cyan))
                 (#_setWidth (#_pen painter) 1)
                 (case (draw-mode main-widget)
                   (:tracks
@@ -148,8 +145,7 @@
                                            y-pos (float y-scale 1.0d0) buf paint-path)
                                (#_closeSubpath paint-path)
                                (#_drawPath painter paint-path)
-                               (if fill? (#_fillPath painter paint-path
-                                                     fill-brush))
+                               (if fill? (#_fillPath painter paint-path fill-brush))
                                ))))))
                   (:overlay
                    (let* ((num-points (min width size))
@@ -478,7 +474,7 @@
 (defun set-scroll-x (stethoscope value)
   (#_setValue (scroll-x (steth-view-pane stethoscope)) value))
 
- (defun scope (&key (id "Stethoscope") (group 400) (bus 0) (num-chans 2))
+(defun scope (&key (id "Stethoscope") (group 400) (bus 0) (num-chans 2))
   (gui-funcall (create-tl-widget 'stethoscope id :group group :bus-num bus :num-chans num-chans)))
 
 #|
