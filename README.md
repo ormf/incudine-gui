@@ -3,14 +3,14 @@
 This package is intended as a gui extension to
 [incudine](http://incudine.sourceforge.net/).
 
-It uses qtools (QT 4.8) as the gui framework.
+It uses commonqt (QT 4.8) as the gui framework.
 
 At the moment it is just a proof of concept.
 
 ## Dependencies
 
 * incudine
-* qtools
+* qt (commonqt)
 
 ## Usage (with quicklisp)
 
@@ -26,27 +26,11 @@ At the moment it is just a proof of concept.
 ```lisp
 ; SLIME 2.19
 CL-USER> (ql:quickload "incudine-gui")
-To load "incudine-gui":
-  Load 1 ASDF system:
-    incudine-gui
-; Loading "incudine-gui"
-.....To load "qt":
-  Load 1 ASDF system:
-    qt
-; Loading "qt"
-.
-> Swapping out QT::LOAD-LIBCOMMONQT for QT-LIBS:LOAD-LIBCOMMONQT.
-> Swapping out QT:MAKE-QAPPLICATION for QT-LIBS::MAKE-QAPPLICATION.
-> Swapping out QT:ENSURE-SMOKE for QT-LIBS::ENSURE-SMOKE.
-
-..........
+<...>
 ("incudine-gui")
-CL-USER> (in-package :scratch)
+CL-USER> (cuda-gui::start)
 #<PACKAGE "INCUDINE.SCRATCH">
-SCRATCH> (rt-start) ;;; this has to be evaluated, before the gui is started!
-:STARTED
-CL-USER> (cuda-gui:gui-start)
-:STARTED
-SCRATCH> (meter :num 8)
-; No value
+SCRATCH> (cuda-gui:scope :num-chans 2 :id :scope01)
+#<INCUDINE-GUI:STETHOSCOPE QWidget 0x7FFFC41386A0>
+SCRATCH> 
 ```

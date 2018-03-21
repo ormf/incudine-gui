@@ -144,8 +144,11 @@ body)
                  (when (eq (first *gui-event*) 'run)
                    (funcall (second *gui-event*))
                    (setf *gui-event* nil))))
-            (sleep .1)
-            (and *gui-thread* (bt:thread-alive-p *gui-thread*) :started))
+            (sleep .5)
+            (if (and *gui-thread* (bt:thread-alive-p *gui-thread*))
+                (progn
+                  (qt::init-qt-fast-calls)
+                  :started)))
           (warn "Couldn't start Gui. Please evaluate (incudine:rt-start) first!"))))
 
 (defun gui-stop ()
