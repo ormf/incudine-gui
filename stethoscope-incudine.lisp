@@ -92,7 +92,7 @@
      (setf curr-bufs bufs-a))
     (dochannels (idx numchans)
       (setf (buffer-value (svref curr-bufs idx) sample-idx)
-            (bus (+ in idx))))
+            (input-bus (+ in idx))))
     (incf sample-idx)
     (when (>= sample-idx sample-max-idx)
       (reduce-warnings

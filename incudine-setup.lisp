@@ -6,7 +6,47 @@
 (in-package #:scratch)
 (export 'setup-io :scratch)
 (export 'node-free-unprotected :scratch)
- 
+
+(defvar *aux* (incudine.external:foreign-alloc-sample
+               (* 256 *number-of-input-bus-channels*)))
+
+(declaim (inline aux))
+(defun aux (n)
+  (smp-ref *aux* n))
+
+(declaim (inline set-aux))
+(defun set-aux (n value)
+  (setf (smp-ref *aux* n) (sample value)))
+
+(defsetf aux set-aux)
+
+#|
+
+(dsp! cp-input-buses ((first-in-bus channel-number))
+  (:defaults 0)
+  (with ((chans (- *number-of-input-bus-channels* first-in-bus)))
+    (declare (channel-number chans))
+    (foreach-frame
+      (dochannels (current-channel chans)
+        (setf (bus (the fixnum
+                        (+ (the fixnum
+                                (* current-frame *number-of-input-bus-channels*))
+                           current-channel first-in-bus)))
+              (audio-in current-channel))))))
+
+(dsp! out-test ((first-in-bus channel-number))
+  (:defaults 0)
+  (with ((chans (min (- *number-of-input-bus-channels* first-in-bus)
+                     *number-of-output-bus-channels*)))
+    (declare (channel-number chans))
+    (foreach-frame
+      (dochannels (current-channel chans)
+        (cout (aux (the fixnum
+                        (+ (the fixnum
+                                (* current-frame *number-of-input-bus-channels*))
+                           current-channel first-in-bus))))))))
+|#
+
 (defmacro foreach-input-channel (&body body)
   (with-gensyms (i)
     `(dochannels (,i *number-of-input-bus-channels*)
@@ -15,11 +55,19 @@
                   (ignorable current-channel))
          ,@body))))
 
+
+(define-vug input-bus ((channel fixnum))
+  (bus (the fixnum
+         (+ (the fixnum
+              (* current-frame *number-of-bus-channels*))
+            channel))))
+
 (dsp! cp-input-buses ((first-in-bus channel-number))
   (:defaults 0)
   (foreach-frame
     (dochannels (current-channel *number-of-input-bus-channels*)
-      (setf (bus (+ current-channel first-in-bus)) (audio-in current-channel)))))
+      (setf (input-bus (+ current-channel first-in-bus))
+            (audio-in (+ current-channel first-in-bus))))))
 
 (dsp! cp-output-buses ((first-out-bus channel-number))
   (:defaults 8)
@@ -27,11 +75,18 @@
     (setf (bus (+ 0 first-out-bus)) (audio-out current-channel))
     (setf (bus (+ 1 first-out-bus)) (audio-out current-channel))))
 
+
+(dsp! bus-to-out ((numchannels channel-number) (startidx channel-number))
+  (foreach-frame
+    (dochannels (current-channel numchannels)
+      (audio-out current-channel)))
+  )
+
 (dsp! mix-to-output ((startidx channel-number) (numchannels channel-number))
   (:defaults 16 8)
   (foreach-frame
     (dochannels (current-channel numchannels)
-      (incf (audio-out current-channel) (bus (+ current-channel startidx))))))
+      (incf (audio-out current-channel) (input-bus (+ current-channel startidx))))))
 
 (dsp! clear-buses ((startidx channel-number) (numchannels channel-number))
   (:defaults 16 8)

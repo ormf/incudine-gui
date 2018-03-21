@@ -113,15 +113,16 @@
             (with-slots (painter background-brush foreground-color
                                  fill-brush main-widget fill?)
                 instance
-              (let* ((width  (#_width instance)) 
+              (let* ((width (#_width instance)) 
                      (height (#_height instance))
                      (num-chans (num-chans (main-widget instance)))
                      (size (bufsize (main-widget instance)))
                      (y-scale (* height -0.5
                                  (- 1 (/ (#_value (scroll-y (steth-view-pane
-                                                             (main-widget instance))))
-                                         10000)))))
-                (declare (fixnum width height num-chans size))
+                                                                (main-widget instance))))
+                                         10000d0)))))
+                (declare (fixnum width height num-chans size)
+                         (double-float y-scale))
                 (#_begin painter instance)
                 (#_eraseRect painter (#_rect instance))
                 (#_setColor (#_pen painter) foreground-color)
@@ -130,35 +131,38 @@
                 (case (draw-mode main-widget)
                   (:tracks
                    (let* ((num-points (min width size))
-                          (x-inc (float (/ width num-points) 1.0d0))
-                          (idx-inc (float (/ size num-points) 1.0d0)))
+                          (x-inc (/ (float width 1.0d0) num-points))
+                          (idx-inc (/ (float size 1.0d0) num-points)))
                      (declare (integer num-points)
                               (double-float idx-inc x-inc))
                      (if t
                          (dotimes (i (length (curr-bufs (main-widget instance))))
-                           (let ((y-pos (float (* (+ 0.5 i) (/ height num-chans)) 1.0d0))
+                           
+                           (let ((y-pos (* (+ 0.5 i) (/ (float height 1.0d0) num-chans)))
                                  (buf (aref (curr-bufs (main-widget instance)) i)))
                              (with-paint-path (paint-path)
                                (#_moveTo paint-path width y-pos)
-                               (#_lineTo paint-path 0 y-pos)
+                               (qt::fast-line-to paint-path 0.0d0 y-pos)
                                (draw-scope num-points idx-inc x-inc
-                                           y-pos (float y-scale 1.0d0) buf paint-path)
+                                           y-pos y-scale buf paint-path)
                                (#_closeSubpath paint-path)
                                (#_drawPath painter paint-path)
                                (if fill? (#_fillPath painter paint-path fill-brush))
                                ))))))
                   (:overlay
                    (let* ((num-points (min width size))
-                          (x-inc (/ width num-points))
-                          (idx-inc (/ size num-points)))
+                          (x-inc (/ (float width 1.0d0) num-points))
+                          (idx-inc (/ (float size 1.0d0) num-points)))
                      (dotimes (i (length (curr-bufs (main-widget instance))))
-                       (let ((y-pos (round (* 0.5 height)))
-                             (buf (aref (curr-bufs (main-widget instance)) i)))
+                       (let ((y-pos (* 0.5 height))
+                             (buf (incudine::svref (curr-bufs (main-widget instance)) i)))
                          (with-paint-path (paint-path)
-                           (#_moveTo paint-path width y-pos)
+                           (#_moveTo paint-path width 1.0d0 y-pos)
                            (#_lineTo paint-path 0 y-pos)
                            (dotimes (x num-points)
-                             (let ((amp (round (* y-scale (incudine:buffer-value buf (round (* x idx-inc)))))))
+                             (let ((amp (* y-scale (incudine:buffer-value
+                                                    buf
+                                                    (incudine::sample->fixnum (* x idx-inc) :roundp t)))))
                                (#_lineTo paint-path (* x x-inc)
                                          (+ y-pos amp))))
                            (#_closeSubpath paint-path)
@@ -166,8 +170,8 @@
                            (if fill? (#_fillPath painter paint-path fill-brush)))))))
                   (:xy (let* ((num-points (min width size)))
                          (if (> (length (curr-bufs (main-widget instance))) 1)
-                             (let ((x-buf (aref (curr-bufs (main-widget instance)) 0))
-                                   (y-buf (aref (curr-bufs (main-widget instance)) 1)))
+                             (let ((x-buf (incudine::svref (curr-bufs (main-widget instance)) 0))
+                                   (y-buf (incudine::svref (curr-bufs (main-widget instance)) 1)))
                                (with-paint-path (paint-path)
                                  (let* ((x-offs (round (/ width 2)))
                                         (y-offs (round (/ height 2))))
@@ -230,9 +234,9 @@
    (steth-ctl :initform (make-instance 'stethoscope-ctl) :accessor steth-ctl)
    (steth-view-pane :initform (make-instance 'stethoscope-view-pane)
                     :accessor steth-view-pane)
-   (bufs-a :accessor bufs-a :type '(simple-array buffer (*)))
-   (bufs-b :accessor bufs-b :type '(simple-array buffer (*)))
-   (curr-bufs :accessor curr-bufs :type '(simple-array buffer (*)))
+   (bufs-a :accessor bufs-a :type '(simple-array buffer (1000)))
+   (bufs-b :accessor bufs-b :type '(simple-array buffer (1000)))
+   (curr-bufs :accessor curr-bufs :type '(simple-array buffer (1000)))
    (redraw? :accessor redraw? :initform nil)
    (num-chans :initform 2 :initarg :num-chans :accessor num-chans)
    (bus-num :initform 0 :initarg :bus-num :accessor bus-num)
@@ -744,5 +748,10 @@
 (make-button-menu button :actions ((audio-in-action "Audio In")
                                    (audio-out-action "Audio Out")
                                    (bus-action "Bus")))
+
+
+(trace qt::resolve-cast)
+
+(untrace)
 
 |#
