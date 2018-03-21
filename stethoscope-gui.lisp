@@ -142,7 +142,7 @@
                                  (buf (aref (curr-bufs (main-widget instance)) i)))
                              (with-paint-path (paint-path)
                                (#_moveTo paint-path width y-pos)
-                               (qt::fast-line-to paint-path 0.0d0 y-pos)
+                               (#_lineTo paint-path 0.0d0 y-pos)
                                (draw-scope num-points idx-inc x-inc
                                            y-pos y-scale buf paint-path)
                                (#_closeSubpath paint-path)
