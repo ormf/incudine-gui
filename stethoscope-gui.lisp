@@ -102,7 +102,7 @@
            (x-eff (float (* x x-inc) 1.0d0))
            (y-eff (float (+ y-pos amp) 1.0d0)))
       (declare (double-float amp x-eff y-eff))
-      (qt::fast-line-to paint-path x-eff y-eff))))
+      (qt::fast-lineto paint-path x-eff y-eff))))
 
 (declaim (inline paint-event))
 (defmethod paint-event ((instance stethoscope-view) ev)
@@ -115,12 +115,14 @@
                 instance
               (let* ((width (#_width instance)) 
                      (height (#_height instance))
+                     (dwidth (float width 1.0d0))
+                     (dheight (float height 1.0d0))
                      (num-chans (num-chans (main-widget instance)))
                      (size (bufsize (main-widget instance)))
-                     (y-scale (* height -0.5
-                                 (- 1 (/ (#_value (scroll-y (steth-view-pane
-                                                                (main-widget instance))))
-                                         10000d0)))))
+                     (y-scale (* dheight -0.5d0
+                                 (- 1.0d0 (/ (float (#_value (scroll-y (steth-view-pane
+                                                                        (main-widget instance)))))
+                                             10000.0d0)))))
                 (declare (fixnum width height num-chans size)
                          (double-float y-scale))
                 (#_begin painter instance)
@@ -131,55 +133,60 @@
                 (case (draw-mode main-widget)
                   (:tracks
                    (let* ((num-points (min width size))
-                          (x-inc (/ (float width 1.0d0) num-points))
+                          (x-inc (/ dwidth num-points))
                           (idx-inc (/ (float size 1.0d0) num-points)))
                      (declare (integer num-points)
                               (double-float idx-inc x-inc))
                      (if t
-                         (dotimes (i (length (curr-bufs (main-widget instance))))
+                         (dotimes (i (the fixnum (length
+                                                  (curr-bufs (main-widget instance)))))
                            
-                           (let ((y-pos (* (+ 0.5 i) (/ (float height 1.0d0) num-chans)))
-                                 (buf (aref (curr-bufs (main-widget instance)) i)))
+                           (let ((y-pos (* (+ 0.5 i) (/ dheight num-chans)))
+                                 (buf (incudine::svref (curr-bufs (main-widget instance)) i)))
                              (with-paint-path (paint-path)
-                               (#_moveTo paint-path width y-pos)
-                               (#_lineTo paint-path 0.0d0 y-pos)
+                               (qt::fast-moveTo paint-path dwidth y-pos)
+                               (qt::fast-lineto paint-path 0.0d0 y-pos)
                                (draw-scope num-points idx-inc x-inc
                                            y-pos y-scale buf paint-path)
                                (#_closeSubpath paint-path)
                                (#_drawPath painter paint-path)
-                               (if fill? (#_fillPath painter paint-path fill-brush))
-                               ))))))
+                               (if fill? (#_fillPath painter paint-path fill-brush))))))))
                   (:overlay
                    (let* ((num-points (min width size))
                           (x-inc (/ (float width 1.0d0) num-points))
                           (idx-inc (/ (float size 1.0d0) num-points)))
+                     (declare (integer num-points)
+                              (double-float idx-inc x-inc))
                      (dotimes (i (length (curr-bufs (main-widget instance))))
-                       (let ((y-pos (* 0.5 height))
+                       (let ((y-pos (* 0.5 dheight))
                              (buf (incudine::svref (curr-bufs (main-widget instance)) i)))
                          (with-paint-path (paint-path)
-                           (#_moveTo paint-path width 1.0d0 y-pos)
-                           (#_lineTo paint-path 0 y-pos)
+                           (qt::fast-moveto paint-path dwidth y-pos)
+                           (qt::fast-lineto paint-path 0.0d0 y-pos)
                            (dotimes (x num-points)
-                             (let ((amp (* y-scale (incudine:buffer-value
-                                                    buf
-                                                    (incudine::sample->fixnum (* x idx-inc) :roundp t)))))
-                               (#_lineTo paint-path (* x x-inc)
+                             (let ((amp (* y-scale
+                                           (incudine:buffer-value
+                                            buf
+                                            (incudine::sample->fixnum (* x idx-inc) :roundp t)))))
+                               (qt::fast-lineTo paint-path (* x x-inc)
                                          (+ y-pos amp))))
                            (#_closeSubpath paint-path)
                            (#_drawPath painter paint-path)
                            (if fill? (#_fillPath painter paint-path fill-brush)))))))
                   (:xy (let* ((num-points (min width size)))
-                         (if (> (length (curr-bufs (main-widget instance))) 1)
+                     (declare (integer num-points))
+                     (if (> (length (curr-bufs (main-widget instance))) 1)
                              (let ((x-buf (incudine::svref (curr-bufs (main-widget instance)) 0))
                                    (y-buf (incudine::svref (curr-bufs (main-widget instance)) 1)))
                                (with-paint-path (paint-path)
-                                 (let* ((x-offs (round (/ width 2)))
-                                        (y-offs (round (/ height 2))))
-                                   (#_moveTo paint-path
+                                 (let* ((x-offs (/ dwidth 2))
+                                        (y-offs (/ dheight 2)))
+                                   (qt::fast-moveTo paint-path
                                              (+ x-offs (* y-scale (incudine:buffer-value x-buf 0)))
                                              (+ y-offs (* y-scale (incudine:buffer-value y-buf 0))))
                                    (dotimes (idx num-points)
-                                     (#_lineTo paint-path
+                                     (declare (fixnum idx))
+                                     (qt::fast-lineTo paint-path
                                                (+ x-offs (* y-scale (incudine:buffer-value x-buf idx)))
                                                (+ y-offs (* y-scale (incudine:buffer-value y-buf idx)))))
                                    (#_closeSubpath paint-path)
@@ -471,9 +478,8 @@
   (#_repaint (steth-view-pane stethoscope)))
 
 (defun repaint-view (stethoscope)
-  (#_repaint (steth-view (steth-view-pane stethoscope)))
 ;;  (format t "repaint-event~%")
-  )
+  (#_repaint (steth-view (steth-view-pane stethoscope))))
 
 (defun set-scroll-x (stethoscope value)
   (#_setValue (scroll-x (steth-view-pane stethoscope)) value))
@@ -526,7 +532,6 @@
 ;; (buffer-value (aref (cuda-gui::bufs (cuda-gui::find-gui "stethoscope02")) 0) 200)
 ;; (incudine:buffer-value (aref (cuda-gui::bufs (cuda-gui::find-gui :stethoscope01)) 0) 200)
 
-
 ;;; (#_close (find-gui "stethoscope"))
 ;;; (#_hide (find-gui "stethoscope"))
 ;;; (#_show (find-gui "stethoscope"))
@@ -576,9 +581,15 @@
   (format t "~%")
   (sb-profile:report :print-no-call-list nil))
 
+
+(sb-profile:profile "INCUDINE" "QT")
+
+(toggle-dsp (find-gui "Stethoscope"))
+
 (progn
   (sb-profile:reset)
-  (paint-event (steth-view (steth-view-pane (find-gui "Stethoscope"))) nil)
+  (dotimes (i 100)
+    (paint-event (steth-view (steth-view-pane (find-gui "Stethoscope"))) nil))
   (format t "~%")
   (sb-profile:report :print-no-call-list nil))
 
@@ -753,5 +764,7 @@
 (trace qt::resolve-cast)
 
 (untrace)
+
+(type-of (curr-bufs (find-gui "Stethoscope")))
 
 |#

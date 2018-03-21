@@ -3,6 +3,8 @@
 
 (defvar *lineto-method-idx* nil)
 (defvar *lineto-fn* nil)
+(defvar *moveto-method-idx* nil)
+(defvar *moveto-fn* nil)
 
 (defun init-qt-fast-calls ()
   (let ((lineto-method (qt::find-applicable-method
@@ -11,10 +13,17 @@
               (qt::qmethod-classfn-index
                lineto-method))
         (setf *lineto-fn*
-              (qt::qclass-trampoline-fun (qt::qmethod-class lineto-method)))))
+              (qt::qclass-trampoline-fun (qt::qmethod-class lineto-method))))
+  (let ((moveto-method (qt::find-applicable-method
+                         (#_new QPainterPath) "moveTo" '(0 0) nil)))
+        (setf *moveto-method-idx*
+              (qt::qmethod-classfn-index
+               moveto-method))
+        (setf *moveto-fn*
+              (qt::qclass-trampoline-fun (qt::qmethod-class moveto-method)))))
 
-(declaim (inline fast-line-to))
-(defun fast-line-to (paint-path x y)
+(declaim (inline fast-lineto))
+(defun fast-lineto (paint-path x y)
     (declare (optimize speed (safety 0))
              (double-float x y)
              (qobject paint-path))
@@ -35,6 +44,29 @@
             y)
       (qt::call-class-fun (the sb-sys:system-area-pointer *lineto-fn*)
                           (the integer *lineto-method-idx*) object stack))))
+
+(declaim (inline fast-moveto))
+(defun fast-moveto (paint-path x y)
+    (declare (optimize speed (safety 0))
+             (double-float x y)
+             (qobject paint-path))
+    (let* ((object (slot-value paint-path 'qt::pointer)))
+      (declare (sb-sys:system-area-pointer object))
+    (cffi:with-foreign-object (stack '(:union StackItem) 3)
+      (setf (cffi:foreign-slot-value
+             (cffi:mem-aptr stack '(:union StackItem)
+                            (the (unsigned-byte 16) 1))
+             '(:union StackItem)
+             'double)
+            x)
+      (setf (cffi:foreign-slot-value
+             (cffi:mem-aptr stack '(:union StackItem)
+                            (the (unsigned-byte 16) 2))
+             '(:union StackItem)
+             'double)
+            y)
+      (qt::call-class-fun (the sb-sys:system-area-pointer *moveto-fn*)
+                          (the integer *moveto-method-idx*) object stack))))
 
 #|
 (let ((paint-path (#_new QPainterPath)))
