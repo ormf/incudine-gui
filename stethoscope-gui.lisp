@@ -67,6 +67,7 @@
    (fill? :initform t :accessor fill?)
    (main-widget :accessor main-widget)
    (painter :accessor painter :type 'qobject)
+   (pen :accessor pen :type 'qobject)
    (background-brush  :accessor background-brush)
    (foreground-color :initform (#_new QColor 255 218 0 255) :accessor foreground-color)
    (fill-brush :initform (#_new QBrush (#_new QColor 165 141 0) (#_Qt::SolidPattern)) :accessor foreground-color)
@@ -84,6 +85,7 @@
   (#_setGeometry instance 50 50 400 400)
   (#_setStyleSheet instance (style instance))
   (setf (painter instance) (#_new QPainter instance))
+  (setf (pen instance) (#_pen (painter instance)))
   (setf (paint-path instance) (#_new QPainterPath))
   (setf (empty-path instance) (#_new QPainterPath))
   (setf (background-brush instance) (#_new QBrush (#_new QColor 0 0 0 255) (#_Qt::SolidPattern))))
@@ -104,13 +106,16 @@
       (declare (double-float amp x-eff y-eff))
       (qt::fast-lineto paint-path x-eff y-eff))))
 
-(declaim (inline paint-event))
+(defmacro with-pen ((pen) painter &body body)
+  `(let ((,pen (#_pen ,painter)))
+     ,@body))
+
 (defmethod paint-event ((instance stethoscope-view) ev)
   (declare (ignore ev) (optimize (speed 3)))
   (let ((stethoscope (main-widget instance)))
     (if (redraw? stethoscope)
         (if (slot-boundp stethoscope 'curr-bufs)
-            (with-slots (painter background-brush foreground-color
+            (with-slots (painter pen background-brush foreground-color
                                  fill-brush main-widget fill?)
                 instance
               (let* ((width (#_width instance)) 
@@ -125,11 +130,11 @@
                                              10000.0d0)))))
                 (declare (fixnum width height num-chans size)
                          (double-float y-scale))
-                (#_begin painter instance)
+                (qt::fast-begin painter instance)
                 (#_eraseRect painter (#_rect instance))
-                (#_setColor (#_pen painter) foreground-color)
-                (#_setBrush painter (#_Qt::cyan))
-                (#_setWidth (#_pen painter) 1)
+                (with-pen (pen) painter
+                          (#_setColor pen foreground-color)
+                          (#_setWidth pen 1))
                 (case (draw-mode main-widget)
                   (:tracks
                    (let* ((num-points (min width size))
@@ -138,9 +143,7 @@
                      (declare (integer num-points)
                               (double-float idx-inc x-inc))
                      (if t
-                         (dotimes (i (the fixnum (length
-                                                  (curr-bufs (main-widget instance)))))
-                           
+                         (dotimes (i (length (curr-bufs (main-widget instance))))
                            (let ((y-pos (* (+ 0.5 i) (/ dheight num-chans)))
                                  (buf (incudine::svref (curr-bufs (main-widget instance)) i)))
                              (with-paint-path (paint-path)
@@ -150,31 +153,33 @@
                                            y-pos y-scale buf paint-path)
                                (#_closeSubpath paint-path)
                                (#_drawPath painter paint-path)
-                               (if fill? (#_fillPath painter paint-path fill-brush))))))))
+                                (if fill? (#_fillPath painter paint-path fill-brush))
+                               ))))))
                   (:overlay
                    (let* ((num-points (min width size))
                           (x-inc (/ (float width 1.0d0) num-points))
                           (idx-inc (/ (float size 1.0d0) num-points)))
-                     (declare (integer num-points)
+                     (declare ((integer 0 100000) num-points)
                               (double-float idx-inc x-inc))
                      (dotimes (i (length (curr-bufs (main-widget instance))))
                        (let ((y-pos (* 0.5 dheight))
                              (buf (incudine::svref (curr-bufs (main-widget instance)) i)))
+                         (declare (incudine::buffer-base buf))
                          (with-paint-path (paint-path)
                            (qt::fast-moveto paint-path dwidth y-pos)
                            (qt::fast-lineto paint-path 0.0d0 y-pos)
                            (dotimes (x num-points)
                              (let ((amp (* y-scale
                                            (incudine:buffer-value
-                                            buf
-                                            (incudine::sample->fixnum (* x idx-inc) :roundp t)))))
+                                            buf (the (integer 0 100000)
+                                                     (incudine::sample->fixnum (* x idx-inc)))))))
                                (qt::fast-lineTo paint-path (* x x-inc)
                                          (+ y-pos amp))))
                            (#_closeSubpath paint-path)
                            (#_drawPath painter paint-path)
                            (if fill? (#_fillPath painter paint-path fill-brush)))))))
                   (:xy (let* ((num-points (min width size)))
-                     (declare (integer num-points))
+                     (declare ((integer 0 100000) num-points))
                      (if (> (length (curr-bufs (main-widget instance))) 1)
                              (let ((x-buf (incudine::svref (curr-bufs (main-widget instance)) 0))
                                    (y-buf (incudine::svref (curr-bufs (main-widget instance)) 1)))
@@ -185,7 +190,6 @@
                                              (+ x-offs (* y-scale (incudine:buffer-value x-buf 0)))
                                              (+ y-offs (* y-scale (incudine:buffer-value y-buf 0))))
                                    (dotimes (idx num-points)
-                                     (declare (fixnum idx))
                                      (qt::fast-lineTo paint-path
                                                (+ x-offs (* y-scale (incudine:buffer-value x-buf idx)))
                                                (+ y-offs (* y-scale (incudine:buffer-value y-buf idx)))))
@@ -375,6 +379,8 @@
       (connect (scroll-x steth-view-pane) "valueChanged(int)" instance "scrollXChanged(int)")
       ;; (with-objects ((key (#_new QKeySequence (#_Key_Return "Qt"))))
       ;;   (#_new QShortcut key instance (QSLOT "toggleDsp()")))
+      (#_setFocus instance)
+      (#_setFocusPolicy instance (#_ClickFocus "Qt"))
       )))
 
 (defmethod close-event ((instance stethoscope ) ev)
@@ -442,10 +448,17 @@
 (defmethod key-press-event ((instance stethoscope) ev)
 ;;  (format t "~a~%" (#_key ev))
   (cond ;; Signal Ctl-Space pressed.
-        ((equal (#_key ev) 32)
+        ((= (#_key ev) 32)
          (call-next-qmethod)
-         (emit-signal instance "toggleDsp()"))
+         (toggle-dsp instance))
         ;; Delegate standard.
+        ((= (#_key ev) 70)
+         (call-next-qmethod)
+         (let ((view (steth-view (steth-view-pane instance))))
+           (toggle (fill? view))
+           (unless (process? instance)
+             (#_repaint view)
+             (paint-event view nil))))
         (T
          (call-next-qmethod))))
 
@@ -584,7 +597,7 @@
 
 (sb-profile:profile "INCUDINE" "QT")
 
-(toggle-dsp (find-gui "Stethoscope"))
+(toggle-dsp (find-gui :scope01))
 
 (progn
   (sb-profile:reset)
@@ -671,7 +684,7 @@
 
 (setf *print-case* :downcase)
 
-
+(untrace)
 
 (incudine::buffer-value)
 
@@ -679,7 +692,7 @@
 
 (progn
   (sb-profile:reset)
-  (paint-event (steth-view (steth-view-pane (find-gui "Stethoscope"))) nil)
+  (paint-event (steth-view (steth-view-pane (find-gui :scope01))) nil)
   (format t "~%")
   (sb-profile:report :print-no-call-list nil))
 

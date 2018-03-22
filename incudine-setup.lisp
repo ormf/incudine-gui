@@ -28,6 +28,31 @@
          (declare (type channel-number current-channel)
                   (ignorable current-channel))
          ,@body))))
+
+(declaim (inline bus))
+(defun bus (num &optional (frame 0))
+  "Return the value of the bus number NUM. Setfable."
+  (declare (type bus-number num)
+           (type non-negative-fixnum frame))
+  (smp-ref incudine::*bus-pointer*
+           (the non-negative-fixnum
+                (+ (the non-negative-fixnum
+                        (* frame *number-of-bus-channels*))
+                   num))))
+
+(declaim (inline set-bus))
+(defun set-bus (num frame value)
+  (declare (type bus-number num)
+           (type non-negative-fixnum frame))
+  (setf (smp-ref *bus-pointer*
+                 (the non-negative-fixnum
+                                (+ (the non-negative-fixnum
+                                        (* frame *number-of-bus-channels*))
+                                   num)))
+        (sample value)))
+
+(defsetf bus (num &optional (frame 0)) (value)
+  `(set-bus ,num ,frame ,value))
 |#
 
 (define-vug input-bus ((channel fixnum))
@@ -46,9 +71,8 @@
 (dsp! cp-output-buses ((first-out-bus channel-number))
   (:defaults 8)
   (foreach-frame
-    (setf (bus (+ 0 first-out-bus)) (audio-out current-channel))
-    (setf (bus (+ 1 first-out-bus)) (audio-out current-channel))))
-
+    (setf (input-bus (+ 0 first-out-bus)) (audio-out current-channel))
+    (setf (input-bus (+ 1 first-out-bus)) (audio-out current-channel))))
 
 (dsp! bus-to-out ((numchannels channel-number) (startidx channel-number))
   (foreach-frame
@@ -56,7 +80,7 @@
       (setf (audio-out current-channel)
             (input-bus (+ current-channel startidx))))))
 
-(dsp! mix-to-output ((startidx channel-number) (numchannels channel-number))
+(dsp! mix-bus-to-out ((startidx channel-number) (numchannels channel-number))
   (:defaults 16 8)
   (foreach-frame
     (dochannels (current-channel numchannels)
@@ -66,7 +90,7 @@
   (:defaults 16 8)
   (foreach-frame
     (dochannels (current-channel numchannels)
-      (setf (bus (+ current-channel startidx)) +sample-zero+))))
+      (setf (input-bus (+ current-channel startidx)) +sample-zero+))))
 
 (defun setup-io ()
   (free 0)
@@ -75,10 +99,10 @@
   (make-group 200 :after 100)
   (make-group 300 :after 200)
   (make-group 400 :after 300)
-  (clear-buses 16 8 :head 100)
-  (cp-input-buses :tail 100)
-  (mix-to-output :startidx 16 :head 300)
-  (cp-output-buses :tail 300))
+  (clear-buses 0 24 :id 1 :head 100)
+  (cp-input-buses :id 2 :tail 100)
+  (mix-bus-to-out :id 3 :startidx 16 :head 300)
+  (cp-output-buses :id 4 :tail 300))
 
 (defun node-free-unprotected ()
  (dogroup (n (node 200))
@@ -90,3 +114,21 @@
 ;;; (set-rt-block-size 256)
 ;;; (rt-start)
 
+#|
+(define-vug input-bus ((channel fixnum))
+  (bus (the fixnum
+         (+ (the fixnum
+              (* current-frame *number-of-input-bus-channels*))
+            channel))))
+
+(dsp! cp-input-buses ()
+  (foreach-frame
+    (dochannels (current-channel *number-of-input-bus-channels*)
+      (setf (input-bus current-channel)
+            (audio-in current-channel)))))
+
+(dsp! out-test ()
+  (foreach-frame
+    (dochannels (current-channel *number-of-input-bus-channels*)
+      (cout (input-bus current-channel)))))
+|#
