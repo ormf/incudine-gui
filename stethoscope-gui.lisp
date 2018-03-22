@@ -377,6 +377,7 @@
       (connect (bus-num-box steth-ctl) "textChanged(QString)" instance "busNumChanged(QString)")
       (connect instance "repaintViewEvent()" instance "repaintView()")
       (connect (scroll-x steth-view-pane) "valueChanged(int)" instance "scrollXChanged(int)")
+      (connect (scroll-y steth-view-pane) "valueChanged(int)" instance "scrollYChanged(int)")
       ;; (with-objects ((key (#_new QKeySequence (#_Key_Return "Qt"))))
       ;;   (#_new QShortcut key instance (QSLOT "toggleDsp()")))
       (#_setFocus instance)
@@ -488,6 +489,7 @@
 
 (defun scroll-y-changed (stethoscope value)
   (declare (ignore value))
+;;  (format t "scroll-y-changed!~%")
   (#_repaint (steth-view-pane stethoscope)))
 
 (defun repaint-view (stethoscope)
