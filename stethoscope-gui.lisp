@@ -279,8 +279,7 @@
    ("repaintView()" repaint-view))
   (:override
    ("closeEvent" close-event)
-   ("keyPressEvent" key-press-event)
-   )
+   ("keyPressEvent" key-press-event))
   (:signals
    ("toggleDspEvent()")
    ("repaintViewEvent()")))

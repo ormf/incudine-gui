@@ -9,7 +9,7 @@
   :serial t
   :depends-on (:commonqt :incudine)
   :components ((:file "package")
-               (:file "qt-hacks")
+               (:file "qt-fast-calls")
                (:file "globals")
                (:file "incudine-setup")
                (:file "gui-utils")

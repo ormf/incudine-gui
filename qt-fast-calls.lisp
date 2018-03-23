@@ -58,6 +58,21 @@
     (setf (fast-call 'drawpath-method-argtype) (car (list-qmethod-argument-types drawpath-method)))
     (setf (fast-call 'begin-fn) (qclass-trampoline-fun (qmethod-class drawpath-method)))))
 
+(time
+ (dotimes (i 1000) (#_width (fast-call 'qwidget))))
+
+  (let ((width-method (find-applicable-method
+                       (list (fast-call 'QWidget)) "width" '() nil)))
+    (setf (fast-call 'width-method-idx) f (qmethod-classfn-index width-method))
+    (setf (fast-call 'width-method-argtype) (car (list-qmethod-argument-types width-method)))
+    (setf (fast-call 'width-fn) (qclass-trampoline-fun (qmethod-class width-method)))
+    (setf (fast-call 'begin-cast)
+          (multiple-value-list (resolve-cast (qobject-class (fast-call 'qwidget))
+                                             (qtype-class (fast-call 'width-method-argtype))))))
+
+(time
+ (dotimes (i 1000) (#_width (fast-call 'qwidget))))
+
 #|
 (let ((method (find-applicable-method (fast-call 'qpainter-path) "closeSubpath" '() nil)))
   (list-qmethod-argument-types method))
@@ -383,5 +398,8 @@
           y)
     (call-class-fun fn method-idx object stack)))
 
+
+(time
+ (dotimes (i 1000) (#_width (fast-call 'qwidget))))
 
 |#
