@@ -1,65 +1,71 @@
+;;;; qt-fast-calls.lisp
+;;;;
+;;;; for painter overrides we need to avoid all consing. Therefore
+;;;; commonqt's calling mechanism of selected qt painting functions
+;;;; needed by the overrides is stripped down here to the direct
+;;;; smoke calls. After loading the qt libs, #'init-qt-fast-calls
+;;;; collects the method indexes, function pointers etc. in a hash
+;;;; table to be accessible by the calling functions. The functions
+;;;; have the same call semantics as the original #_ functions of
+;;;; commonqt and are prefixed fast-<qt-name>.
+;;;;
+;;;; Copyright (c) 2018 Orm Finnendahl
+;;;; <orm.finnendahl@selma.hfmdk-frankfurt.de>
+
+
 (in-package :qt)
 (named-readtables:in-readtable :qt)
 
-(defvar *widget* nil)
-(defvar *lineto-method-idx* nil)
-(defvar *lineto-fn* nil)
-(defvar *moveto-method-idx* nil)
-(defvar *moveto-fn* nil)
-(defvar *begin-method-idx* nil)
-(defvar *begin-method-argtype* nil)
-(defvar *begin-fn* nil)
-(defvar *begin-method-idx* nil)
-(defvar *begin-method-argtype* nil)
-(defvar *begin-cast* nil)
-(defvar *begin-fn* nil)
-(defvar *closesubpath-method-idx* nil)
-(defvar *closesubpath-fn* nil)
-(defvar *drawPath-method-idx* nil)
-(defvar *drawPath-method-argtype* nil)
-(defvar *drawPath-fn* nil)
+(defvar *qt-fast-call-hash* (make-hash-table))
 
+(declaim (inline fast-call))
+(defun fast-call (name)
+     (gethash name *qt-fast-call-hash*))
+
+(defun set-fast-call (name value)
+  (setf (gethash name *qt-fast-call-hash*) value))
+
+(defsetf fast-call set-fast-call)
 
 (defun init-qt-fast-calls ()
-  (setf *widget* (#_new QWidget))
-  (let ((lineto-method (qt::find-applicable-method
-                         (#_new QPainterPath) "lineTo" '(0 0) nil)))
-        (setf *lineto-method-idx*
-              (qt::qmethod-classfn-index
-               lineto-method))
-        (setf *lineto-fn*
-              (qt::qclass-trampoline-fun (qt::qmethod-class lineto-method))))
-  (let ((moveto-method (qt::find-applicable-method
-                         (#_new QPainterPath) "moveTo" '(0 0) nil)))
-        (setf *moveto-method-idx*
-              (qt::qmethod-classfn-index
-               moveto-method))
-        (setf *moveto-fn*
-              (qt::qclass-trampoline-fun (qt::qmethod-class moveto-method))))
-  (let ((begin-method (qt::find-applicable-method
-                       (#_new QPainter) "begin" (list (#_new QWidget)) nil)))
-
-
-    (setf *begin-method-idx* (qt::qmethod-classfn-index begin-method))
-    (setf *begin-method-argtype* (car (list-qmethod-argument-types begin-method)))
-    (setf *begin-fn* (qt::qclass-trampoline-fun (qt::qmethod-class begin-method)))
-    (setf *begin-cast*
-          (multiple-value-list (resolve-cast (qobject-class *widget*)
-                                     (qtype-class *begin-method-argtype*)))))
-  (let ((drawpath-method (qt::find-applicable-method
-                       (#_new QPainter) "drawPath" (list (#_new QPainterPath)) nil)))
-    (setf *drawpath-method-idx* (qt::qmethod-classfn-index drawpath-method))
-    (setf *drawpath-method-argtype* (car (list-qmethod-argument-types drawpath-method)))
-    (setf *begin-fn* (qt::qclass-trampoline-fun (qt::qmethod-class drawpath-method)))))
+  (setf (fast-call 'qwidget) (#_new QWidget)) ;;; class-instances
+  (setf (fast-call 'qpainter) (#_new QPainter))
+  (setf (fast-call 'qpainter-path) (#_new QPainterPath))
+  (let ((lineto-method (find-applicable-method
+                        (fast-call 'qpainter-path) "lineTo" '(0 0) nil)))
+    (setf (fast-call 'lineto-method-idx)
+          (qmethod-classfn-index
+           lineto-method))
+    (setf (fast-call 'lineto-fn)
+          (qclass-trampoline-fun (qmethod-class lineto-method))))
+  (let ((moveto-method (find-applicable-method
+                        (fast-call 'qpainter-path) "moveTo" '(0 0) nil)))
+    (setf (fast-call 'moveto-method-idx)
+          (qmethod-classfn-index moveto-method))
+    (setf (fast-call 'moveto-fn)
+          (qclass-trampoline-fun (qmethod-class moveto-method))))
+  (let ((begin-method (find-applicable-method
+                       (fast-call 'QPainter) "begin" (list (fast-call 'QWidget)) nil)))
+    (setf (fast-call 'begin-method-idx) (qmethod-classfn-index begin-method))
+    (setf (fast-call 'begin-method-argtype) (car (list-qmethod-argument-types begin-method)))
+    (setf (fast-call 'begin-fn) (qclass-trampoline-fun (qmethod-class begin-method)))
+    (setf (fast-call 'begin-cast)
+          (multiple-value-list (resolve-cast (qobject-class (fast-call 'qwidget))
+                                             (qtype-class (fast-call 'begin-method-argtype))))))
+  (let ((drawpath-method (find-applicable-method
+                          (fast-call 'QPainter) "drawPath" (list (fast-call 'qpainter-path)) nil)))
+    (setf (fast-call 'drawpath-method-idx) (qmethod-classfn-index drawpath-method))
+    (setf (fast-call 'drawpath-method-argtype) (car (list-qmethod-argument-types drawpath-method)))
+    (setf (fast-call 'begin-fn) (qclass-trampoline-fun (qmethod-class drawpath-method)))))
 
 #|
-(let ((method (qt::find-applicable-method (#_new QPainterPath) "closeSubpath" '() nil)))
+(let ((method (find-applicable-method (fast-call 'qpainter-path) "closeSubpath" '() nil)))
   (list-qmethod-argument-types method))
 
-(let ((method (qt::find-applicable-method (#_new QPainterPath) "drawPath" (list (#_new QPainter)) nil)))
+(let ((method (find-applicable-method (fast-call 'qpainter-path) "drawPath" (list (fast-call 'QPainter)) nil)))
   (list-qmethod-argument-types method))
 
-(let ((method (qt::find-applicable-method (#_new QPainter) "drawPath" (list (#_new QPainterPath)) nil)))
+(let ((method (find-applicable-method (fast-call 'QPainter) "drawPath" (list (fast-call 'qpainter-path)) nil)))
   (list-qmethod-argument-types method))
 |#
 ;; (init-qt-fast-calls)
@@ -69,7 +75,7 @@
     (declare (optimize speed (safety 0))
              (double-float x y)
              (qobject paint-path))
-    (let* ((object (slot-value paint-path 'qt::pointer)))
+    (let* ((object (slot-value paint-path 'pointer)))
       (declare (sb-sys:system-area-pointer object))
     (cffi:with-foreign-object (stack '(:union StackItem) 3)
       (setf (cffi:foreign-slot-value
@@ -84,15 +90,15 @@
              '(:union StackItem)
              'double)
             y)
-      (qt::call-class-fun (the sb-sys:system-area-pointer *lineto-fn*)
-                          (the integer *lineto-method-idx*) object stack))))
+      (call-class-fun (the sb-sys:system-area-pointer (fast-call 'lineto-fn))
+                      (the integer (fast-call 'lineto-method-idx)) object stack))))
 
 (declaim (inline fast-moveto))
 (defun fast-moveto (paint-path x y)
     (declare (optimize speed (safety 0))
              (double-float x y)
              (qobject paint-path))
-    (let* ((object (slot-value paint-path 'qt::pointer)))
+    (let* ((object (slot-value paint-path 'pointer)))
       (declare (sb-sys:system-area-pointer object))
     (cffi:with-foreign-object (stack '(:union StackItem) 3)
       (setf (cffi:foreign-slot-value
@@ -107,47 +113,14 @@
              '(:union StackItem)
              'double)
             y)
-      (qt::call-class-fun (the sb-sys:system-area-pointer *moveto-fn*)
-                          (the integer *moveto-method-idx*) object stack))))
-
-#|
-
-(defparameter *widget* (#_new QWidget))
-(defparameter *steth-view* (make-instance 'cuda-gui::stethoscope-view))
-
-(let ((paint-path (#_new QPainterPath))
-      (painter (#_new QPainter))
-      (instance *widget*))
-  (sb-profile:reset)
-  (time (dotimes (i 1000)
-          (fast-begin painter instance)))
-  (sb-profile:report :print-no-call-list nil)
-)
-
-(trace resolve-cast)
-
-(let ((paint-path (#_new QPainterPath))
-      (painter (#_new QPainter))
-      (instance (make-instance 'cuda-gui::stethoscope-view)))
-  (sb-profile:reset)
-  (time
-   (dotimes (i 1000)
-           (fast-begin painter instance)))
-  (sb-profile:report :print-no-call-list nil))
-
-(resolve-cast 28868 15620)
-
-(let ((paint-path (#_new QPainterPath))
-      (painter (#_new QPainter))
-      (instance (make-instance 'cuda-gui::stethoscope-view)))
-  (fast-drawpath painter paint-path))
-|#
+      (call-class-fun (the sb-sys:system-area-pointer (fast-call 'moveto-fn))
+                      (the integer (fast-call 'moveto-method-idx)) object stack))))
 
 (declaim (inline fast-begin))
 (defun fast-begin (painter instance)
     (declare (optimize speed (safety 0))
              (qobject painter instance))
-    (let* ((object (slot-value painter 'qt::pointer)))
+    (let* ((object (slot-value painter 'pointer)))
       (declare 
              (sb-sys:system-area-pointer object))
     (cffi:with-foreign-object (stack '(:union StackItem) 2)
@@ -156,21 +129,18 @@
                             (the (unsigned-byte 16) 1))
              '(:union StackItem)
              'class)
-            (%perform-cast (qobject-pointer instance)
-                           (first *begin-cast*)
-                           (second *begin-cast*)
-                           (third *begin-cast*)))
-      (qt::call-class-fun *begin-fn* *begin-method-idx* object stack)
-      )))
-
-
-(untrace)
+            (let ((begin-cast (fast-call 'begin-cast)))
+              (%perform-cast (qobject-pointer instance)
+                             (first begin-cast)
+                             (second begin-cast)
+                             (third begin-cast))))
+      (call-class-fun (fast-call 'begin-fn) (fast-call 'begin-method-idx) object stack))))
 
 (declaim (inline fast-drawpath))
 (defun fast-drawpath (painter instance)
     (declare (optimize speed (safety 0))
              (qobject painter instance))
-    (let* ((object (slot-value painter 'qt::pointer)))
+    (let* ((object (slot-value painter 'pointer)))
       (declare 
              (sb-sys:system-area-pointer object))
     (cffi:with-foreign-object (stack '(:union StackItem) 2)
@@ -181,12 +151,13 @@
              'class)
             (multiple-value-bind (castfn <from> <to>)
                 (resolve-cast (qobject-class instance)
-                              (qtype-class *drawpath-method-argtype*))
+                              (qtype-class (fast-call 'drawpath-method-argtype)))
               (%perform-cast (qobject-pointer instance)
                              castfn <from> <to>)))
-      (qt::call-class-fun *drawpath-fn* *drawpath-method-idx* object stack))))
+      (call-class-fun (fast-call 'drawpath-fn) (fast-call 'drawpath-method-idx) object stack))))
 
 
+#|
 (declaim (inline opt-end-painter))
 (defun opt-end-painter (fn method-idx object)
     (declare (optimize speed (safety 0))
@@ -195,11 +166,39 @@
     (cffi:with-foreign-object (stack '(:union StackItem) 1)
       (call-class-fun fn method-idx object stack)))
 
-#|
 
+(defparameter *widget* (#_new QWidget))
+(defparameter *steth-view* (make-instance 'cuda-gui::stethoscope-view))
+
+(let ((paint-path (fast-call 'qpainter-path))
+      (painter (fast-call 'QPainter))
+      (instance *widget*))
+  (sb-profile:reset)
+  (time (dotimes (i 1000)
+          (fast-begin painter instance)))
+  (sb-profile:report :print-no-call-list nil)
+)
+
+(trace resolve-cast)
+
+(let ((paint-path (fast-call 'qpainter-path))
+      (painter (fast-call 'QPainter))
+      (instance (make-instance 'cuda-gui::stethoscope-view)))
+  (sb-profile:reset)
+  (time
+   (dotimes (i 1000)
+           (fast-begin painter instance)))
+  (sb-profile:report :print-no-call-list nil))
+
+(resolve-cast 28868 15620)
+
+(let ((paint-path (fast-call 'qpainter-path))
+      (painter (fast-call 'QPainter))
+      (instance (make-instance 'cuda-gui::stethoscope-view)))
+  (fast-drawpath painter paint-path))
 
 (defparameter *instance* (make-instance 'cuda-gui::stethoscope-view))
-(defparameter *painter* (#_new QPainter))
+(defparameter *painter* (fast-call 'QPainter))
 
 (let* ((instance (make-instance 'cuda-gui::stethoscope-view))
        (painter (#_new QPainter instance)))
@@ -218,7 +217,7 @@
 
 (qtype-stack-item-slot <type>)
 
-(qt::find-applicable-method
+(find-applicable-method
  (#_new QPainter) "begin" (list *instance*) nil)
 
 
@@ -226,10 +225,10 @@
 
 (arglist-marshaller)
 
-(list-qmethod-argument-types (qt::find-applicable-method
+(list-qmethod-argument-types (find-applicable-method
  (#_new QPainter) "begin" (list *instance*) nil))
 
-(qt::find-applicable-method
+(find-applicable-method
  (#_new QPainter) "begin" (list (#_new QWidget)) nil)549509
 
 (type-of )

@@ -4,8 +4,16 @@
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
 (in-package #:scratch)
-(export 'setup-io :scratch)
-(export 'node-free-unprotected :scratch)
+(export '(setup-io
+          input-bus
+          node-free-unprotected
+          clear-buses
+          cp-input-buses
+          cp-output-buses
+          clear-buses
+          mix-bus-to-out
+          bus-to-out)
+        :scratch)
 
 (defvar *aux* (incudine.external:foreign-alloc-sample
                (* 256 *number-of-input-bus-channels*)))
