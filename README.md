@@ -14,6 +14,54 @@ At the moment it is just a proof of concept.
 
 ## Usage (with quicklisp)
 
+For compiling commonqt:
+
+- Load (ql:quickload "qt-libs")
+
+- Compile the libs with
+
+  (qt-libs:ensure-standalone-libs :method :install-sources :force T)
+
+They will be installed in .cache/common-lisp/sbcl-<version>/home/<username>/quicklisp/dists/quicklisp/software/qt-libs-<version>-git/
+
+- Load (ql:quickload "qt")
+
+- Wait until you hit the error
+
+  OPERATION-ERROR while invoking #<COMPILE-OP > on
+  #<CPP->SO "qt" "so" "commonqt">
+
+Then change into the commqt quicklisp directory
+
+cd /home/<username>/quicklisp/dists/quicklisp/software/commonqt-<version>-git/
+
+issue
+
+qmake-qt4
+
+Then open the created Makefile and add the following include paths at
+the end of the line beginning with "INCPATH" (omit the linebreaks!):
+
+ -I/home/orm/.cache/common-lisp/sbcl-<version>-linux-x64/home/orm/quicklisp/dists/quicklisp/software/qt-libs-<version>-git/smokegen/install/include
+
+and
+
+-I/home/orm/.cache/common-lisp/sbcl-<version>-linux-x64/home/orm/quicklisp/dists/quicklisp/software/qt-libs-<version>-git/smokeqt/install/include
+
+copy the generated libs with
+
+sudo cp -av <qt-libs-dir> /usr/lib
+
+run
+
+sudo ldconfig
+
+finally run
+
+make
+
+libcommonqt.so should now be generated
+
 * Copy or link the "incudine-gui" Folder to a place seen by asdf (like
   `"~/quicklisp/local-projects"`).
 

@@ -122,7 +122,7 @@ body)
 :show NIL
 :main-thread T
 :blocking NIL)
-
+(start)
 |#
 
 (defun gui-funcall (function)

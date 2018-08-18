@@ -132,7 +132,7 @@
 ;;        (format t "repaint!~%")
         (let ((painter (painter instance))
               (pen-color (pen-color instance)))
-          (#_begin painter instance)
+          (qt::fast-begin painter instance)
           (#_eraseRect painter (#_rect instance))
           (#_setColor (#_pen painter) pen-color)
           (dotimes (i (1+ (floor (/ 100 db-inc))))

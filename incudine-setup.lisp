@@ -107,10 +107,12 @@
   (make-group 200 :after 100)
   (make-group 300 :after 200)
   (make-group 400 :after 300)
-  (clear-buses 0 24 :id 1 :head 100)
+  (clear-buses 0 32 :id 1 :head 100)
   (cp-input-buses :id 2 :tail 100)
   (mix-bus-to-out :id 3 :startidx 16 :head 300)
   (cp-output-buses :id 4 :tail 300))
+
+;;;(setup-io)
 
 (defun node-free-unprotected ()
  (dogroup (n (node 200))

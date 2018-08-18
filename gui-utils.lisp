@@ -29,6 +29,7 @@
 
 (defmacro with-paint-path ((paint-path) &body body)
   `(let ((,paint-path (#_new QPainterPath)))
+     (declare (qobject ,paint-path))
      ,@body
      (#_delete ,paint-path)))
 

@@ -32,9 +32,9 @@
       (setf sample-idx 0)
       (when (> tick-idx screen-mintick)
         (setf tick-idx 0)
-        (reduce-warnings
-          (nrt-funcall
-           (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
+        ;; (reduce-warnings
+        ;;   (nrt-funcall
+        ;;    (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
         (setf curr-p (not curr-p))
         (cond (curr-p ;;; swap display and audio buffer
                (setf (incudine-gui::curr-bufs gui) bufs-b)
@@ -65,7 +65,8 @@
     (when (>= sample-idx sample-max-idx)
       (reduce-warnings
         (nrt-funcall
-          (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()"))))
+          (lambda () (cuda-gui::emit-signal gui "repaintViewEvent()")))
+        )
       (setf sample-idx 0)
       (setf curr-p (not curr-p))
       (cond (curr-p ;;; swap display and audio buffer
