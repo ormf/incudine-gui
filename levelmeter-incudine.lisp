@@ -1,4 +1,4 @@
-;;;; levelmeter-gui.lisp
+;;;; levelmeter-incudine.lisp
 ;;;;
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
@@ -91,7 +91,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
             (cuda-gui:change-level
               (svref (cuda-gui:meters cuda-gui:*test*) idx)
               (round-sample
-                (+ 100 (lin->db
+                (+ 100 (linear->db
                          (sqrt (the non-negative-sample (/ sum count)))))))))
         (setf sum +sample-zero+)
         (setf count 0)))))
@@ -110,7 +110,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
       (when (>= count max)
         (setf value
               (round-sample
-                (+ 100 (lin->db
+                (+ 100 (linear->db
                          (sqrt (the non-negative-sample (/ sum count)))))))
         (nrt-funcall
           (lambda ()
@@ -162,7 +162,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
       (when (>= count max)
         (setf value
               (round-sample
-                (+ 100 (lin->db
+                (+ 100 (linear->db
                          (sqrt (the non-negative-sample (/ sum count)))))))
         (nrt-funcall
           (lambda ()
@@ -174,7 +174,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
                             (periods channel-number))
   (:defaults +sample-zero+ 10 nil 2)
   (with ((size (round-sample (/ (* periods *sample-rate*) freq)))
-         (hanning (make-local-buffer (1+ size) :fill-function (hanning-rms)))
+         (hanning (make-buffer (1+ size) :fill-function (hanning-rms)))
          (sums (make-frame periods :zero-p t))
          (bufidx (make-array periods :element-type 'channel-number))
          (max +sample-zero+)
@@ -191,7 +191,7 @@ The alternative is a foreign *GUI-BUS-POINTER*:
         (progn
           (setf value
                 (round-sample
-                  (+ 100 (lin->db
+                  (+ 100 (linear->db
                           (sqrt (the non-negative-sample (smp-ref sums i)))))))
           (if (/= last-value value)
               (progn

@@ -96,7 +96,7 @@ body)
 (defvar *widget-finalized-sync* (incudine::make-sync-condition "widget-finalized"))
 (declaim (type incudine::sync-condition *widget-finalized-sync*))
 
-(defvar *gui-event* nil)
+(defvar *gui-event* nil) ;;; event queue for commands to be executed in the gui thread
 
 (defmacro with-traps-masked (&body body)
   #+sbcl `(sb-int:with-float-traps-masked (:underflow :overflow :invalid :inexact)
@@ -131,6 +131,7 @@ body)
   function)
 
 (defun gui-start ()
+  "initialize and start the gui's event loop"
   (if (and *gui-thread* (bt:thread-alive-p *gui-thread*))
       :started
       (if incudine.util:*rt-thread*
@@ -161,7 +162,6 @@ body)
 ;;;  (setf *gui-thread* nil)
   :stopped
   )
-
 
 #|
 (time (with-controller ()

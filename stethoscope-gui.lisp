@@ -13,8 +13,8 @@
 (defclass stethoscope-ctl () 
   ((num-chans-box :initform (make-instance 'numbox) :accessor num-chans-box)
    (bus-num-box :initform (make-instance 'numbox) :accessor bus-num-box)
-   (mode-button :initform (make-instance 'pushbutton) :accessor mode-button)
    (io-button :initform (make-instance 'pushbutton) :accessor io-button)
+   (mode-button :initform (make-instance 'pushbutton) :accessor mode-button)
    (tracks-action :accessor tracks-action)
    (overlay-action :accessor overlay-action)
    (xy-action :accessor xy-action)
@@ -24,11 +24,6 @@
    (layout :accessor layout))
   (:metaclass qt-class)
   (:qt-superclass "QDialog"))
-
-(defmacro assign-menu-action (slot menu action)
-  `(progn
-     (setf ,slot ,action)
-     (#_addAction ,menu ,slot)))
 
 (defmethod initialize-instance :after ((instance stethoscope-ctl) &key parent)
   (if parent
@@ -110,12 +105,7 @@
   `(let ((,pen (#_pen ,painter)))
      ,@body))
 
-
-
-
-
-
-
+#|
 
 (defmethod paint-event ((instance stethoscope-view) ev)
   (declare (ignore ev) (optimize (speed 3)))
@@ -211,6 +201,7 @@
 ;;; (if fill? (#_fill-path painter paint-path fill-brush))
                                        ))))))))
                   (qt::fast-end painter))))))))
+|#
 
 (defmethod paint-event ((instance stethoscope-view) ev)
   (declare (ignore ev) (optimize (speed 3)))

@@ -17,6 +17,7 @@
                (:file "gui-startup")
                (:file "gui-class")
                (:file "numbox")
+               (:file "labelbox")
                (:file "pushbutton")
                (:file "scrollbar")
                (:file "levelmeter-gui")
@@ -24,3 +25,4 @@
                (:file "stethoscope-gui")
                (:file "stethoscope-incudine")
                ))
+ 

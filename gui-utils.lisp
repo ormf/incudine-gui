@@ -7,7 +7,7 @@
 (in-package #:incudine-gui)
 (named-readtables:in-readtable :qt)
 
-(defmacro make-button-menu (button &key (actions nil) text)
+(defmacro make-button-menu (button &key (actions nil) label)
   (let ((menu (gensym "MENU")))
     `(let ((,menu (#_new QMenu)))
        ,@(loop
@@ -15,10 +15,15 @@
             append `((setf ,(first action) (#_new QAction ,(second action) ,menu))
                      (#_addAction ,menu ,(first action))))
        (#_setMenu ,button ,menu)
-       ,(if text
-            `(#_setText ,button ,text)
+       ,(if label
+            `(#_setText ,button ,label)
             `(#_setText ,button ,(cadar actions)))
        ,menu)))
+
+(defmacro assign-menu-action (slot menu action)
+  `(progn
+     (setf ,slot ,action)
+     (#_addAction ,menu ,slot)))
 
 (defmacro with-painter ((painter instance) &body body)
   `(let ((,painter (#_new QPainter ,instance)))
