@@ -34,3 +34,13 @@ return it. id has to be unique among all toplevel widgets."
     (#_show (apply #'make-instance widget-class :gui-signal t :id id args)))
   (incudine::sync-condition-wait *widget-finalized-sync*)
   (find-gui id))
+
+(defun cudagui-window-initializer (widget)
+  (let ((id (id widget)))
+    (#_setWindowTitle widget (format-title id))
+    (#_setStyleSheet widget *background-color*)
+    (#_setGeometry widget 50 50 100 100)
+    (unwind-protect
+         (add-gui id widget)
+      (if (gui-signal widget)
+          (incudine::sync-condition-signal *widget-finalized-sync*)))))
