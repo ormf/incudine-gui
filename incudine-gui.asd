@@ -24,5 +24,6 @@
                (:file "levelmeter-incudine")
                (:file "stethoscope-gui")
                (:file "stethoscope-incudine")
+               (:file "beatstep-gui")
                ))
  

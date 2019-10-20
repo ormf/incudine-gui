@@ -32,3 +32,8 @@
                 (progn (#_close gui)
                        (sleep 0.1)))
            cuda-gui::*guis*))
+
+#|
+(defun remove-all-guis (&key (db *guis*))
+  (loop for gui being each hash-key of db do (remhash gui db)))
+|#

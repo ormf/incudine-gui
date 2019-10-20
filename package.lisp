@@ -11,7 +11,11 @@
            #:STETHOSCOPE
            #:SCOPE
            #:METER-GUI
+           #:BEATSTEP-GUI
            #:METERS
            #:DSP-NODE-IDS
            #:*TEST*
-           #:CHANGE-LEVEL))
+           #:CHANGE-LEVEL
+           #:SET-FADER
+           #:INC-FADER
+           #:SET-CALLBACK))
