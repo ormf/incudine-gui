@@ -25,5 +25,6 @@
                (:file "stethoscope-gui")
                (:file "stethoscope-incudine")
                (:file "beatstep-gui")
+               (:file "nanokontrol-gui")
                ))
  

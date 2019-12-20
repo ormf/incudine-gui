@@ -11,7 +11,6 @@
 ;;; later. See https://www.gnu.org/licenses/gpl-2.0.html for the text
 ;;; of this agreement.
 ;;; 
-;;; This program is distributed in the hope that it will be useful,
 ;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 ;;; GNU General Public License for more details.
@@ -35,6 +34,72 @@ border-radius: 2px;
 text-align: right;
 selection-background-color: white")
 
+(defclass nk2-label-spinbox (label-spinbox)
+  ((last-received :initform 0 :accessor last-received)
+   (below? :initform t :accessor below?)
+   (locked? :initform nil :accessor locked?))
+  (:metaclass qt-class)
+  (:qt-superclass "QDialog")
+  (:slots
+   ("ccIn(int)" cc-in)
+   ("newValue(int)" new-pvb-value))
+  (:signals
+   ("ccIn(int)")
+   ("newValue(int)")))
+
+(defmethod initialize-instance :after ((instance nk2-label-spinbox) &key parent)
+  (declare (ignorable parent))
+;;  (call-next-method)
+  (with-slots (text-box) instance
+    (connect instance "ccIn(int)" instance "ccIn(int)")
+    (connect instance "newValue(int)" instance "newValue(int)")))
+
+(defgeneric new-pvb-value (instance value))
+
+(defmethod new-pvb-value ((instance nk2-label-spinbox) value)
+  (with-slots (locked? below? last-received) instance
+    (update-pvb-value instance value)
+;;    (format t "~&val: ~a, lr: ~a" value last-received)
+    (if (/= last-received value)
+        (progn
+          (setf locked? nil)
+          (setf below? (< last-received value))
+          (#_setStyleSheet (text-box instance) "background-color:  \"#ffdddd\"; width: 50px;"))
+          (#_setStyleSheet (text-box instance) "background-color:  \"#ddffdd\"; width: 50px;")))
+  (funcall (callback instance) (#_value (text-box instance))))
+
+;;;(set-fader (find-gui :nk2) 0 13)
+
+(defgeneric update-pvb-value (instance value))
+
+(defmethod update-pvb-value ((instance nk2-label-spinbox) value)
+;;;  (format t "~&update-pvb-value~%")
+  (#_setValue (text-box instance) value)
+  (funcall (callback instance) value))
+
+(defgeneric cc-in (instance value))
+
+(defmethod cc-in ((instance nk2-label-spinbox) value)
+  (with-slots (locked? below? last-received) instance
+;;    (format t "~&cc-in!~%")
+    (setf last-received value)
+    (cond
+      (locked? (progn;; (format t "~&locked!")
+                      (update-pvb-value instance value)))
+      ((let ((curr-value (#_value (text-box instance))))
+         (if below? (>= value curr-value) (<= value curr-value)))
+       (setf locked? t)
+       (setf last-received value)
+       (new-pvb-value instance value)))))
+
+
+(defmethod set-state ((instance toggle) state)
+  (setf (state instance) state)
+;;  (format t "~&set-state: ~a~%" state)
+  (#_setStyleSheet instance
+                   (format nil "background-color: ~a; width: 40px;"
+                           (if (> state 0) (on-color instance) (off-color instance))))
+  (funcall (callback instance) instance))
 
 (defparameter *nanokontrol-pushbutton-style*
 "
@@ -112,7 +177,7 @@ QPushButton {
       (loop for row below rows
          do (loop for column below (* 2 cols) by 2
                   do (let* ((idx (+ (/ column 2) (* 8 row)))
-                            (new-lsbox (make-instance 'label-spinbox :label (format nil "~d" (1+ idx))
+                            (new-lsbox (make-instance 'nk2-label-spinbox :label (format nil "~d" (1+ idx))
                                                                       :text "--"
                                                                       :id (1+ idx))))
                        (#_setRange (text-box new-lsbox) 0 127)
@@ -122,21 +187,22 @@ QPushButton {
                       (#_addWidget lsboxlayout (text-box new-lsbox))
                       (#_addStretch lsboxlayout)
                       (#_addLayout grid lsboxlayout (1+ row) (1+ column))))))
-      (loop for row below rows
-         do (loop for column below (* 2 cols) by 2
-                  do (let* ((idx (+ (/ column 2) (* 8 row)))
-                            (new-button (make-instance 'toggle :state 0 :id (1+ idx))))
-                       (setf (aref buttons idx) new-button)
-                       (#_setFocusPolicy new-button (#_StrongFocus "Qt"))
-                       (#_setFixedHeight new-button 25)
-                    (let ((buttonlayout (#_new QHBoxLayout)))
-                      (#_addWidget buttonlayout new-button)
-                      (#_addStretch buttonlayout)
-                      (#_addLayout grid buttonlayout (+ 3 row) (1+ column))))))
+      ;; (loop for row below rows
+      ;;    do (loop for column below (* 2 cols) by 2
+      ;;             do (let* ((idx (+ (/ column 2) (* 8 row)))
+      ;;                       (new-button (make-instance 'toggle :state 0 :id (1+ idx))))
+      ;;                  (setf (aref buttons idx) new-button)
+      ;;                  (#_setFocusPolicy new-button (#_StrongFocus "Qt"))
+      ;;                  (#_setFixedHeight new-button 25)
+      ;;               (let ((buttonlayout (#_new QHBoxLayout)))
+      ;;                 (#_addWidget buttonlayout new-button)
+      ;;                 (#_addStretch buttonlayout)
+      ;;                 (#_addLayout grid buttonlayout (+ 3 row) (1+ column))))))
       (#_addLayout main grid))
     (connect load-action "triggered()" instance "loadAction()")
     (connect save-action "triggered()" instance "saveAction()")
     (connect saveas-action "triggered()" instance "saveasAction()")))
+
 
 ;;; popup Menu actions (not implemented in Nanokontrol)
 
@@ -170,17 +236,29 @@ QPushButton {
   (stop-overriding))
 
 (defmethod set-fader ((instance nanokontrol-grid) idx val)
-  (emit-signal (aref (param-boxes instance) idx) "setValue(int)" val))
+  (emit-signal (aref (param-boxes instance) idx) "newValue(int)" val))
+
+#|
+(setf (last-received (aref (param-boxes (find-gui :nk2)) 0)) 16)
+
+(untrace)
+
+(set-fader (find-gui :nk2) 0 14)
+
+(last-received (aref (param-boxes (find-gui :nk2)) 0))
+
+(handle-cc-in (find-gui :nk2) 0 10)
+|#
 
 (defgeneric set-encoder-callback (obj idx fn))
 
 (defmethod set-encoder-callback ((instance nanokontrol-grid) idx fn)
   (setf (callback (aref (param-boxes instance) idx)) fn))
 
-(defgeneric set-pushbutton-callback (obj idx fn))
+(defgeneric handle-cc-in (instance idx value))
 
-(defmethod set-pushbutton-callback ((instance nanokontrol-grid) idx fn)
-  (setf (callback (aref (buttons instance) idx)) fn))
+(defmethod handle-cc-in ((instance nanokontrol-grid) idx value)
+  (emit-signal (aref (param-boxes instance) idx) "ccIn(int)" value))
 
 (defun nanokontrol-gui (&key (id :nk2))
   (if (find-gui id) (progn (close-gui id) (sleep 1)))

@@ -8,7 +8,7 @@
 (defclass pushbutton ()
   ((style :initform "
 QPushButton {
-         border: 1px solid #838383; 
+         border: 1px solid #838383;
          background-color: #ffffff;
          selection-color: red;
          cursor-color: white;
@@ -24,7 +24,8 @@ QPushButton::menu-indicator {
          left: -5px;
          top: 1px;
      }
-" :accessor style))
+" :accessor style)
+   (height :initform 25 :initarg :height :accessor height))
   (:metaclass qt-class)
   (:qt-superclass "QPushButton"))
 
@@ -32,7 +33,55 @@ QPushButton::menu-indicator {
   (if parent
       (new instance parent)
       (new instance))
-  (#_setStyleSheet instance (style instance))
-  (#_setFocusPolicy instance (#_NoFocus "Qt"))
-  (#_setFixedHeight instance 25))
+  (with-slots (style height) instance
+    (#_setStyleSheet instance style)
+    (#_setFocusPolicy instance (#_NoFocus "Qt"))
+    (#_setFixedHeight instance height)))
 
+(defclass toggle ()
+  ((style :initform "
+QPushButton {
+         background-color: #dddddd;
+         min-width: 40px;
+     }
+" :initarg :style :accessor style)
+   (id :initform nil :initarg :id :accessor id)
+   (height :initform 25 :initarg :height :accessor height)
+   (state :initform 0 :initarg :state :accessor state)
+   (off-color :initform "#dddddd" :initarg :off-color :accessor off-color)
+   (on-color :initform "#ff7777" :initarg :on-color :accessor on-color)
+   (callback :initform #'identity :initarg :callback :accessor callback))
+  (:metaclass qt-class)
+  (:qt-superclass "QPushButton")
+  (:slots
+   ("clickAction()" toggle-state)
+   ("stateAction(int)" set-state))
+  (:signals
+   ("setState(int)")))
+
+(defgeneric toggle-state (obj))
+
+(defmethod toggle-state ((instance toggle))
+  (set-state instance (if (zerop (state instance)) 127 0)))
+
+(defgeneric set-state (obj state))
+
+(defmethod set-state ((instance toggle) state)
+  (setf (state instance) state)
+;;  (format t "~&set-state: ~a~%" state)
+  (#_setStyleSheet instance
+                   (format nil "background-color: ~a; width: 40px;"
+                           (if (> state 0) (on-color instance) (off-color instance))))
+  (funcall (callback instance) instance))
+
+(defmethod initialize-instance :after ((instance toggle) &key parent)
+  (if parent
+      (new instance parent)
+      (new instance))
+  (with-slots (height style state) instance
+    (#_setStyleSheet instance style)
+    (#_setFocusPolicy instance (#_NoFocus "Qt"))
+    (#_setFixedHeight instance height)
+    (set-state instance state)
+    (connect instance "released()" instance "clickAction()")
+    (connect instance "setState(int)" instance "stateAction(int)")))

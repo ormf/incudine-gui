@@ -24,6 +24,11 @@
   (unless (remhash id db) ;;; the warning should never happen...
     (warn "couldn't remove gui, ~s not found in database!" id)))
 
+(defun close-gui (id &key (db *guis*))
+  (let ((gui (gethash id db)))
+    (if gui (#_close (gethash id db))
+        (warn "couldn't close gui, ~s not found in database!" id))))
+
 (defun find-gui (id &key (db *guis*))
   (gethash id db))
 

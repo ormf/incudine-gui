@@ -2,6 +2,11 @@
 ;;;;
 ;;;; Copyright (c) 2018 Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>
 
+;;; Zusammenfassung von Parameter und seinem Label. Da Label und
+;;; Parameter in einem globalen Grid angeordnet werden sollen, werden
+;;; sie hier nur instantiiert, aber noch nicht einem Layout
+;;; zugewiesen. Das passiert dann in den jeweils übergeordneten guis.
+
 (in-package #:incudine-gui)
 (named-readtables:in-readtable :qt)
 
@@ -73,6 +78,68 @@ selection-background-color: white" :accessor style))
     )
 ;;,  (connect instance "processQueueSig()" instance "processQueue()")
   )
+
+
+(defclass label-spinbox ()
+  ((label :initform "" :initarg :label :accessor label)
+   (text :initform "" :initarg :text :accessor text)
+   (id :initform 0 :initarg :id :accessor id)
+   (callback :initform #'identity :accessor callback)
+   (label-box :initform (#_new QLabel) :accessor label-box)
+   (text-box :initform (make-instance 'custom-spinbox) :accessor text-box))
+  (:metaclass qt-class)
+  (:qt-superclass "QDialog")
+  (:slots
+   ("setValue(int)" set-pvb-value)
+   ("incValue(int)" inc-pvb-value))
+  (:signals
+   ("setValue(int)")
+   ("incValue(int)")
+   ("setLabel(QString)")))
+
+(defun make-align (value)
+  (let ((align  (#_AlignVCenter "Qt")))
+    (setf (slot-value align 'qt::value) value)
+    align))
+
+;;; (slot-value (#_AlignVCenter "Qt") 'qt::value)
+
+;;;(funcall #_AlignVcenter "Qt")
+
+(defmethod initialize-instance :after ((instance label-spinbox) &key parent)
+  (if parent
+      (new instance parent)
+      (new instance))
+  (with-slots (text-box label-box label text) instance
+    (#_setStyleSheet text-box *beatstep-box-style*)
+    ;;    (#_setFixedWidth instance 45)
+    (#_setFixedHeight text-box 25)
+    (#_setAlignment text-box (#_AlignRight "Qt"))
+;;    (#_setText text-box text)
+;;    (#_setReadOnly text-box t)
+    (#_setText label-box label)
+    (#_setAlignment label-box (make-align 130))
+    (connect instance "setLabel(QString)" label-box "setText(QString)")
+    (connect text-box "valueChanged(int)" instance "setValue(int)")
+    (connect instance "setValue(int)" instance "setValue(int)")
+    (connect instance "incValue(int)" instance "incValue(int)")
+    (connect text-box "returnPressed(int)" instance "recallValue(int)")))
+
+(defgeneric set-pvb-value (instance value))
+(defgeneric inc-pvb-value (instance value))
+(defgeneric recall-pvb-value (instance value))
+
+(defmethod set-pvb-value ((instance label-spinbox) value)
+  (#_setValue (text-box instance) value)
+  (funcall (callback instance) (#_value (text-box instance))))
+
+(defmethod inc-pvb-value ((instance label-spinbox) inc)
+  (#_setValue (text-box instance)
+              (+ (#_value (text-box instance)) inc))
+  (funcall (callback instance) (#_value (text-box instance))))
+
+(defmethod recall-pvb-value ((instance label-spinbox) value)
+  (funcall (callback instance) (#_value (text-box instance))))
 
 ;;; (#_AlignCenter "Qt") <=> (#_Qt::AlignCenter)
 

@@ -12,10 +12,13 @@
            #:SCOPE
            #:METER-GUI
            #:BEATSTEP-GUI
+           #:NANOKONTROL-GUI
            #:METERS
            #:DSP-NODE-IDS
            #:*TEST*
            #:CHANGE-LEVEL
            #:SET-FADER
            #:INC-FADER
-           #:SET-CALLBACK))
+           #:SET-ENCODER-CALLBACK
+           #:SET-PUSHBUTTON-CALLBACK
+           #:STATE))
