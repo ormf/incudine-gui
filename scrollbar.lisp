@@ -56,7 +56,7 @@
          (#_setOrientation instance (#_Horizontal "Qt"))
          (#_setFixedHeight instance *scrollbarwidth*)))))
   (#_setStyleSheet instance
-                      "border: 2px solid #838383; cursor-color: white; border-radius: 5px; selection-background-color: white")
+                      "border: 2px solid #838383; border-radius: 5px; selection-background-color: white")
   (#_setMinimum instance 0)
   (#_setMaximum instance 10000))
 

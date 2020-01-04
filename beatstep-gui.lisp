@@ -25,7 +25,6 @@
   "border: 1px solid #838383; 
 background-color: #dddddd;
 selection-color: black;
-cursor-color: red;
 border-radius: 2px;
 text-align: right;
 selection-background-color: white")
@@ -36,7 +35,6 @@ QPushButton {
          border: 2px solid #838383; 
          border-style: outset;
          background-color: #dddddd;
-         cursor-color: white;
          border-radius: 2px;
          min-width: 40px;
      }
@@ -51,6 +49,17 @@ QPushButton {
 ")
 
 (defun empty-fn (&rest args) (declare (ignore args)) (values))
+
+;;; (set-fader (find-gui :bs1) 14 120)
+
+#|
+
+(setf (val (aref (param-boxes (find-gui :bs1)) 10)) 31)
+
+(set-ref (aref (param-boxes (find-gui :nk2)) 10) (cl-boids-gpu::num-boids cl-boids-gpu::*bp*))
+
+;;; (aref (param-boxes (find-gui :nk2)) 2)
+|#
 
 (defclass beatstep-grid (cudagui-tl-mixin)
   ((rows :initform 2 :initarg :rows :accessor rows)
@@ -100,18 +109,6 @@ QPushButton {
       (#_addLayout main grid))))
 
 ;;; pvb is "Parameter-View-Box"
-
-(defmethod set-pvb-value ((instance label-spinbox) value)
-  (#_setValue (text-box instance) value)
-  (funcall (callback instance) (#_value (text-box instance))))
-
-(defmethod inc-pvb-value ((instance label-spinbox) inc)
-  (#_setValue (text-box instance)
-              (+ (#_value (text-box instance)) inc))
-  (funcall (callback instance) (#_value (text-box instance))))
-
-(defmethod recall-pvb-value ((instance label-spinbox) value)
-  (funcall (callback instance) (#_value (text-box instance))))
 
 (defmethod close-event ((instance beatstep-grid) ev)
   (declare (ignore ev))

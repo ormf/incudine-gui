@@ -4,7 +4,7 @@
 
 (defpackage #:incudine-gui
   (:nicknames #:cuda-gui)
-  (:use :cl :qt)
+  (:use :cl :qt :cellctl)
   (:export #:GUI-START
            #:GUI-STOP
            #:FIND-GUI
@@ -21,4 +21,5 @@
            #:INC-FADER
            #:SET-ENCODER-CALLBACK
            #:SET-PUSHBUTTON-CALLBACK
+           #:PARAM-BOXES
            #:STATE))

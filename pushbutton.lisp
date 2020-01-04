@@ -11,7 +11,6 @@ QPushButton {
          border: 1px solid #838383;
          background-color: #ffffff;
          selection-color: red;
-         cursor-color: white;
          border-radius: 2px;
          selection-background-color: white;
          min-width: 80px;

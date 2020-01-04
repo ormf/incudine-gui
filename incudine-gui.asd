@@ -7,7 +7,7 @@
   :author "Orm Finnendahl <orm.finnendahl@selma.hfmdk-frankfurt.de>"
   :license "licensed under the GPL v2 or later"
   :serial t
-  :depends-on (:qt-libs :qt :incudine)
+  :depends-on (:qt-libs :qt :incudine :cellctl)
   :components ((:file "package")
                (:file "qt-fast-calls")
                (:file "globals")

@@ -23,7 +23,6 @@
    (style :initform "border: 1px solid #838383; 
 background-color: #ffffff;
 selection-color: red;
-cursor-color: red;
 border-radius: 2px;
 selection-background-color: white" :accessor style))
   (:metaclass qt-class)

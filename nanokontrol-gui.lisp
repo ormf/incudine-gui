@@ -29,53 +29,93 @@
   "border: 1px solid #838383; 
 background-color: #dddddd;
 selection-color: black;
-cursor-color: red;
 border-radius: 2px;
 text-align: right;
 selection-background-color: white")
 
 (defclass nk2-label-spinbox (label-spinbox)
-  ((last-received :initform 0 :accessor last-received)
+  ((last-received :initform -1 :accessor last-received)
    (below? :initform t :accessor below?)
    (locked? :initform nil :accessor locked?))
   (:metaclass qt-class)
   (:qt-superclass "QDialog")
   (:slots
    ("ccIn(int)" cc-in)
-   ("newValue(int)" new-pvb-value))
+   ("Value(int)" new-pvb-value)
+   ("setValue(int)" set-pvb-value))
   (:signals
    ("ccIn(int)")
-   ("newValue(int)")))
+   ("newValue(int)")
+   ("setValue(int)")))
 
 (defmethod initialize-instance :after ((instance nk2-label-spinbox) &key parent)
   (declare (ignorable parent))
 ;;  (call-next-method)
   (with-slots (text-box) instance
     (connect instance "ccIn(int)" instance "ccIn(int)")
-    (connect instance "newValue(int)" instance "newValue(int)")))
+    (connect instance "Value(int)" instance "Value(int)")
+    (connect instance "setValue(int)" instance "setValue(int)")
+    (connect text-box "valueChanged(int)" instance "xValue(int)")))
 
-(defgeneric new-pvb-value (instance value))
+;;; (set-fader (find-gui :nk2) 14 125)
 
-(defmethod new-pvb-value ((instance nk2-label-spinbox) value)
-  (with-slots (locked? below? last-received) instance
-    (update-pvb-value instance value)
-;;    (format t "~&val: ~a, lr: ~a" value last-received)
-    (if (/= last-received value)
-        (progn
-          (setf locked? nil)
-          (setf below? (< last-received value))
-          (#_setStyleSheet (text-box instance) "background-color:  \"#ffdddd\"; width: 50px;"))
-          (#_setStyleSheet (text-box instance) "background-color:  \"#ddffdd\"; width: 50px;")))
-  (funcall (callback instance) (#_value (text-box instance))))
+#|
 
-;;;(set-fader (find-gui :nk2) 0 13)
+(setf (val (aref (param-boxes (find-gui :nk2)) 10)) 31)
+
+(set-ref (aref (param-boxes (find-gui :nk2)) 10) (cl-boids-gpu::num-boids cl-boids-gpu::*bp*))
+
+;;; (aref (param-boxes (find-gui :nk2)) 2)
+|#
+
+(defmethod (setf val) (new-val (instance nk2-label-spinbox))
+  (format t "directly setting value-cell~%")
+  (emit-signal instance "newValue(int)" new-val)
+  (when (ref instance)
+    (set-cell (ref instance) (funcall (map-fn instance) new-val) :src instance))
+  new-val)
+
+(defmethod ref-set-cell ((instance nk2-label-spinbox) new-val)
+  (with-slots (rmap-fn) instance
+    (emit-signal instance "setValue(int)"
+                 (funcall (rmap-fn instance) new-val))))
+
+(defmethod inc-pvb-value ((instance nk2-label-spinbox) inc)
+  (new-pvb-value instance
+                 (+ (#_value (text-box instance)) inc)))
+
+(defgeneric new-pvb-value (instance value)
+  (:method ((instance nk2-label-spinbox) value)
+    (with-slots (locked? below? last-received) instance
+      (setf locked? (= last-received value))
+      (setf below? (<= last-received value))
+      (#_setStyleSheet (text-box instance)
+                       (if locked?
+                           "background-color:  \"#ddffdd\"; width: 50px;"
+                           "background-color:  \"#ffdddd\"; width: 50px;"))
+      (update-pvb-value instance value))))
+
+(defgeneric set-pvb-value (instance value)
+  (:method ((instance nk2-label-spinbox) value)
+    (with-slots (locked? below? last-received) instance
+      (setf locked? (= last-received value))
+      (setf below? (<= last-received value))
+      (#_setStyleSheet (text-box instance)
+                       (if locked?
+                           "background-color:  \"#ddffdd\"; width: 50px;"
+                           "background-color:  \"#ffdddd\"; width: 50px;"))
+      (#_setValue (text-box instance) value)
+;;;      (funcall (callback instance) value)
+)))
 
 (defgeneric update-pvb-value (instance value))
 
 (defmethod update-pvb-value ((instance nk2-label-spinbox) value)
 ;;;  (format t "~&update-pvb-value~%")
   (#_setValue (text-box instance) value)
-  (funcall (callback instance) value))
+  (funcall (callback instance) value)
+  (when (ref instance)
+    (set-cell (ref instance) (funcall (map-fn instance) value) :src instance)))
 
 (defgeneric cc-in (instance value))
 
@@ -90,7 +130,9 @@ selection-background-color: white")
          (if below? (>= value curr-value) (<= value curr-value)))
        (setf locked? t)
        (setf last-received value)
-       (new-pvb-value instance value)))))
+       (#_setStyleSheet (text-box instance)
+                        "background-color:  \"#ddffdd\"; width: 50px;")
+       (update-pvb-value instance value)))))
 
 
 (defmethod set-state ((instance toggle) state)
@@ -107,7 +149,6 @@ QPushButton {
          border: 2px solid #838383; 
          border-style: outset;
          background-color: #dddddd;
-         cursor-color: white;
          border-radius: 2px;
          min-width: 40px;
      }
@@ -239,6 +280,8 @@ QPushButton {
   (emit-signal (aref (param-boxes instance) idx) "newValue(int)" val))
 
 #|
+
+ ;
 (setf (last-received (aref (param-boxes (find-gui :nk2)) 0)) 16)
 
 (untrace)
