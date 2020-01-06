@@ -11,7 +11,7 @@ QPushButton {
          border: 1px solid #838383;
          background-color: #ffffff;
          selection-color: red;
-         border-radius: 2px;
+         border-radius: 0px;
          selection-background-color: white;
          min-width: 80px;
      }
@@ -41,6 +41,7 @@ QPushButton::menu-indicator {
   ((style :initform "
 QPushButton {
          background-color: #dddddd;
+         selection-color: #ff7777;
          min-width: 40px;
      }
 " :initarg :style :accessor style)
@@ -69,9 +70,19 @@ QPushButton {
   (setf (state instance) state)
 ;;  (format t "~&set-state: ~a~%" state)
   (#_setStyleSheet instance
-                   (format nil "background-color: ~a; width: 40px;"
+                   (format nil
+                           "background-color: ~a;
+border-radius: 4px; 
+border-style: outset;
+border-color: #777777;
+border-width: 1px;
+min-width: 45px;
+"
                            (if (> state 0) (on-color instance) (off-color instance))))
   (funcall (callback instance) instance))
+
+(format nil "background-color: ~a; width: 40px;"
+                           )
 
 (defmethod initialize-instance :after ((instance toggle) &key parent)
   (if parent

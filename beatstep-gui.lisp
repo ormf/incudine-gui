@@ -22,29 +22,49 @@
 (named-readtables:in-readtable :qt)
 
 (defparameter *beatstep-box-style*
-  "border: 1px solid #838383; 
-background-color: #dddddd;
-selection-color: black;
-border-radius: 2px;
-text-align: right;
-selection-background-color: white")
+ "QSpinBox {
+    background-color: #dddddd;
+}
 
-(defparameter *beatstep-pushbutton-style*
-"
-QPushButton {
+")
+
+#|
+    border-width: 2;
+    border-color: #000000;
+    margin 0;
+    padding 0;
+    border-style: solid;
+    border-radius: 7;
+    padding: 0px;
+    padding-left: 0px; /* make room for the arrows */
+    padding-right: 0px; /* make room for the arrows */
+
+Pushbutton:
+
          border: 2px solid #838383; 
          border-style: outset;
          background-color: #dddddd;
          border-radius: 2px;
-         min-width: 40px;
+
+
+|#
+
+
+(defparameter *beatstep-pushbutton-style*
+"
+QPushButton {
+         min-width: 80px;
+         max-width: 135px;
      }
 ")
 
 (defparameter *beatstep-pushbutton-style*
 "
 QPushButton {
+         border: 0px solid #838383; 
+         border-style: outset;
          background-color: #dddddd;
-         min-width: 40px;
+         min-width: 45px;
      }
 ")
 
@@ -102,8 +122,10 @@ QPushButton {
                   do (let* ((idx (+ (/ column 2) (* 8 row)))
                             (new-button (make-instance 'toggle :state 0 :id (1+ idx))))
                        (setf (aref buttons idx) new-button)
+                       (#_setStyleSheet new-button *beatstep-pushbutton-style*)
                        (#_setFocusPolicy new-button (#_StrongFocus "Qt"))
                        (#_setFixedHeight new-button 25)
+                       (#_setFixedWidth new-button 45)
                     (let ((buttonlayout (#_new QHBoxLayout)))
                       (#_addWidget buttonlayout new-button)
                       (#_addStretch buttonlayout)

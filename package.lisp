@@ -22,4 +22,5 @@
            #:SET-ENCODER-CALLBACK
            #:SET-PUSHBUTTON-CALLBACK
            #:PARAM-BOXES
+           #:BUTTONS
            #:STATE))

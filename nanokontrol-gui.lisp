@@ -55,7 +55,7 @@ selection-background-color: white")
     (connect instance "ccIn(int)" instance "ccIn(int)")
     (connect instance "Value(int)" instance "Value(int)")
     (connect instance "setValue(int)" instance "setValue(int)")
-    (connect text-box "valueChanged(int)" instance "xValue(int)")))
+    (connect text-box "valueChanged(int)" instance "Value(int)")))
 
 ;;; (set-fader (find-gui :nk2) 14 125)
 
@@ -133,15 +133,6 @@ selection-background-color: white")
        (#_setStyleSheet (text-box instance)
                         "background-color:  \"#ddffdd\"; width: 50px;")
        (update-pvb-value instance value)))))
-
-
-(defmethod set-state ((instance toggle) state)
-  (setf (state instance) state)
-;;  (format t "~&set-state: ~a~%" state)
-  (#_setStyleSheet instance
-                   (format nil "background-color: ~a; width: 40px;"
-                           (if (> state 0) (on-color instance) (off-color instance))))
-  (funcall (callback instance) instance))
 
 (defparameter *nanokontrol-pushbutton-style*
 "
