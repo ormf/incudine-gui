@@ -24,8 +24,11 @@ QPushButton {
 |#
 
 (defclass pushbutton ()
-  ((callback :initform #'identity :initarg :callback :accessor callback)
+  ((callback :initform #'empty-fn :initarg :callback :accessor callback)
    (id :initform nil :initarg :id :accessor id)
+   (flash-time :initform 0.15 :initarg :flash-time :accessor flash-time)
+   (off-color :initform "#dddddd" :initarg :off-color :accessor off-color)
+   (on-color :initform "#ff7777" :initarg :on-color :accessor on-color)
    (height :initform 25 :initarg :height :accessor height)
    (style :initform "
 QPushButton {
@@ -44,10 +47,43 @@ QPushButton::menu-indicator {
          left: -5px;
          top: 1px;
      }
-" :accessor style)
-)
+" :accessor style))
   (:metaclass qt-class)
-  (:qt-superclass "QPushButton"))
+  (:qt-superclass "QPushButton")
+  (:slots
+   ("clickAction()" do-click)))
+
+(defgeneric flash-button (pushbutton)
+  (:method ((instance pushbutton))
+    (with-slots (flash-time on-color off-color) instance
+      (#_setStyleSheet
+       instance
+       (format nil
+               "background-color: ~a;
+    border-radius: 4px; 
+    border-style: outset;
+    border-color: #777777;
+    border-width: 1px;
+    min-width: 45px;"
+               on-color))
+      (incudine::at
+          (+ (incudine:now) (round (* flash-time incudine::*sample-rate*)))
+        (lambda () (#_setStyleSheet
+       instance
+       (format nil
+               "background-color: ~a;
+    border-radius: 4px; 
+    border-style: outset;
+    border-color: #777777;
+    border-width: 1px;
+    min-width: 45px;"
+               off-color)))))))
+
+(defgeneric do-click (instance)
+  (:documentation "do click action.")
+  (:method ((instance pushbutton))
+    (flash-button instance)
+    (funcall (callback instance))))
 
 (defmethod initialize-instance :after ((instance pushbutton) &key parent)
   (if parent
@@ -56,15 +92,16 @@ QPushButton::menu-indicator {
   (with-slots (style height) instance
     (#_setStyleSheet instance style)
     (#_setFocusPolicy instance (#_NoFocus "Qt"))
-    (#_setFixedHeight instance height)))
+    (#_setFixedHeight instance height))
+  (connect instance "pressed()" instance "clickAction()"))
+
+;;; toggle
 
 (defclass toggle (pushbutton)
   ((state :initform 0 :initarg :state :accessor state)
    (ref :initform nil :initarg :ref :accessor ref)
    (map-fn :initform #'identity :initarg :map-fn :accessor map-fn)
-   (rmap-fn :initform #'identity :initarg :rmap-fn :accessor rmap-fn)
-   (off-color :initform "#dddddd" :initarg :off-color :accessor off-color)
-   (on-color :initform "#ff7777" :initarg :on-color :accessor on-color))
+   (rmap-fn :initform #'identity :initarg :rmap-fn :accessor rmap-fn))
   (:metaclass qt-class)
   (:qt-superclass "QPushButton")
   (:slots
@@ -131,6 +168,19 @@ QPushButton::menu-indicator {
           (ref-set-cell instance (slot-value new-ref 'val)))))
   new-ref)
 
+(defmethod initialize-instance :after ((instance toggle) &key parent)
+  (if parent
+      (new instance parent)
+      (new instance))
+  (with-slots (height style) instance
+    (#_setStyleSheet instance style)
+    (#_setFocusPolicy instance (#_NoFocus "Qt"))
+    (#_setFixedHeight instance height)
+    (connect instance "pressed()" instance "clickAction()")
+    (connect instance "setValue(int)" instance "setValue(int)")
+    (connect instance "changeValue(int)" instance "changeValue(int)")))
+
+
 
 
 
@@ -143,19 +193,8 @@ QPushButton::menu-indicator {
 (untrace)
  
 |#
-                           
-(defmethod initialize-instance :after ((instance toggle) &key parent)
-  (if parent
-      (new instance parent)
-      (new instance))
-  (with-slots (height style) instance
-    (#_setStyleSheet instance style)
-    (#_setFocusPolicy instance (#_NoFocus "Qt"))
-    (#_setFixedHeight instance height)
-    (connect instance "released()" instance "clickAction()")
-    (connect instance "setValue(int)" instance "setValue(int)")
-    (connect instance "changeValue(int)" instance "changeValue(int)")))
-  
+
+
 (defclass label-pushbutton (pushbutton)
   ((label :initform "" :initarg :label :accessor label)
    (label-box :initform (#_new QLabel) :accessor label-box))
@@ -171,6 +210,7 @@ QPushButton::menu-indicator {
     (#_setFixedHeight instance 25)
     (#_setText label-box label)
     (#_setAlignment label-box (make-align 130))
+    (connect instance "pressed()" instance "clickAction()")
     (connect instance "setLabel(QString)" label-box "setText(QString)")))
 
 (defclass label-toggle (toggle)
@@ -187,7 +227,7 @@ QPushButton::menu-indicator {
     (#_setStyleSheet instance style)
     (#_setFocusPolicy instance (#_NoFocus "Qt"))
     (#_setFixedHeight instance height)
-    (connect instance "released()" instance "clickAction()")
+    (connect instance "pressed()" instance "clickAction()")
     (connect instance "setValue(int)" instance "setValue(int)")
     (connect instance "changeValue(int)" instance "changeValue(int)"))
   (with-slots (label-box label) instance
@@ -195,3 +235,4 @@ QPushButton::menu-indicator {
     (#_setText label-box label)
     (#_setAlignment label-box (make-align 130))
     (connect instance "setLabel(QString)" label-box "setText(QString)")))
+

@@ -210,7 +210,6 @@ QPushButton {
          do (loop for column below (* 2 cols) by 2
                   do (let* ((idx (+ (/ column 2) (* 8 row)))
                             (new-lsbox (make-instance 'nk2-label-spinbox :label (format nil "~d" (1+ idx))
-                                                                      :text "--"
                                                                       :id (1+ idx))))
                        (#_setRange (text-box new-lsbox) 0 127)
                        (setf (aref param-boxes idx) new-lsbox)

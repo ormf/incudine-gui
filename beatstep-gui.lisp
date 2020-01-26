@@ -113,7 +113,6 @@ background-color: #dddddd;
                             (new-lsbox (make-instance
                                         'label-spinbox
                                         :label (format nil "~d" (1+ idx))
-                                        :text "--"
                                         :id (1+ idx))))
                        (#_setRange (text-box new-lsbox) 0 127)
                        (setf (aref param-boxes idx) new-lsbox)
@@ -164,6 +163,11 @@ background-color: #dddddd;
 
 (defmethod set-pushbutton-callback ((instance beatstep-grid) idx fn)
   (setf (callback (aref (buttons instance) idx)) fn))
+
+(defmethod remove-model-refs ((instance beatstep-grid))
+  (dotimes (idx 16)
+    (set-ref (aref (param-boxes instance) idx) nil)
+    (set-ref (aref (buttons instance) idx) nil)))
 
 (defun beatstep-gui (&rest args)
   (let ((id (getf args :id :bs1)))

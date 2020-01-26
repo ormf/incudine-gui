@@ -23,4 +23,7 @@
            #:SET-PUSHBUTTON-CALLBACK
            #:PARAM-BOXES
            #:BUTTONS
-           #:STATE))
+           #:STATE
+           #:SET-PVB-VALUE
+           #:INC-PVB-VALUE
+           #:RECALL-PVB-VALUE))

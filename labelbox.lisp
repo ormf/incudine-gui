@@ -81,7 +81,6 @@ selection-background-color: white" :accessor style))
 
 (defclass label-spinbox ()
   ((label :initform "" :initarg :label :accessor label)
-   (text :initform "" :initarg :text :accessor text)
    (id :initform 0 :initarg :id :accessor id)
    (ref :initform nil :initarg :ref :accessor ref)
    (map-fn :initform #'identity :initarg :map-fn :accessor map-fn)
@@ -138,7 +137,7 @@ selection-background-color: white" :accessor style))
   (if parent
       (new instance parent)
       (new instance))
-  (with-slots (text-box label-box label text) instance
+  (with-slots (text-box label-box label) instance
     (#_setStyleSheet text-box *beatstep-box-style*)
     (#_setFixedWidth text-box 45)
     (#_setFixedWidth instance 45)
@@ -173,6 +172,10 @@ selection-background-color: white" :accessor style))
   (:method ((instance label-spinbox) val)
     (declare (ignore val))
     (funcall (callback instance) (#_value (text-box instance)))))
+
+(defmethod val ((instance label-spinbox))
+  (#_value (text-box instance)))
+
 
 ;;; (#_AlignCenter "Qt") <=> (#_Qt::AlignCenter)
 
