@@ -49,15 +49,6 @@ Pushbutton:
 
 |#
 
-
-(defparameter *beatstep-pushbutton-style*
-"
-QPushButton {
-         min-width: 80px;
-         max-width: 135px;
-     }
-")
-
 (defparameter *beatstep-pushbutton-style*
 "
 QPushButton {
@@ -67,6 +58,20 @@ QPushButton {
          min-width: 45px;
      }
 ")
+
+(defparameter *beatstep-pushbutton-style*
+"
+QPushButton {
+background-color: #dddddd;
+    border-radius: 4px; 
+    border-style: outset;
+    border-color: #777777;
+    border-width: 1px;
+    min-width: 45px;
+     }
+")
+
+
 
 (defun empty-fn (&rest args) (declare (ignore args)) (values))
 
@@ -92,7 +97,7 @@ QPushButton {
   (:override
    ("closeEvent" close-event)))
 
-(defmethod initialize-instance :after ((instance beatstep-grid) &key parent)
+(defmethod initialize-instance :after ((instance beatstep-grid) &key parent &allow-other-keys)
   (if parent
       (new instance parent)
       (new instance))
@@ -160,9 +165,10 @@ QPushButton {
 (defmethod set-pushbutton-callback ((instance beatstep-grid) idx fn)
   (setf (callback (aref (buttons instance) idx)) fn))
 
-(defun beatstep-gui (&key (id :bs1))
-  (if (find-gui id) (progn (close-gui id) (sleep 1)))
-  (create-tl-widget 'beatstep-grid id))
+(defun beatstep-gui (&rest args)
+  (let ((id (getf args :id :bs1)))
+    (if (find-gui id) (progn (close-gui id) (sleep 1)))
+    (apply #'create-tl-widget 'beatstep-grid id args)))
 
 #|
 

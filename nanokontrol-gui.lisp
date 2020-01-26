@@ -183,7 +183,7 @@ QPushButton {
   (:override
    ("closeEvent" close-event)))
 
-(defmethod initialize-instance :after ((instance nanokontrol-grid) &key parent)
+(defmethod initialize-instance :after ((instance nanokontrol-grid) &key parent &allow-other-keys)
   (if parent
       (new instance parent)
       (new instance))
@@ -294,6 +294,6 @@ QPushButton {
 (defmethod handle-cc-in ((instance nanokontrol-grid) idx value)
   (emit-signal (aref (param-boxes instance) idx) "ccIn(int)" value))
 
-(defun nanokontrol-gui (&key (id :nk2))
+(defun nanokontrol-gui (&rest args &key (id :nk2) &allow-other-keys)
   (if (find-gui id) (progn (close-gui id) (sleep 1)))
-  (create-tl-widget 'nanokontrol-grid id))
+  (apply #'create-tl-widget 'nanokontrol-grid id args))

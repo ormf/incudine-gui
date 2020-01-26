@@ -31,7 +31,13 @@
   "make, register and show instance of toplevel widget-class and
 return it. id has to be unique among all toplevel widgets."
   (with-controller ()
-    (#_show (apply #'make-instance widget-class :gui-signal t :id id args)))
+    (let* ((win (apply #'make-instance widget-class :gui-signal t :id id args))
+           (width (getf args :width (#_width win)))
+           (height (getf args :height (#_height win)))
+           (x (getf args :x-pos 0))
+           (y (getf args :y-pos 0)))
+      (#_setGeometry win x y width height)
+      (#_show win)))
   (incudine::sync-condition-wait *widget-finalized-sync*)
   (find-gui id))
 
