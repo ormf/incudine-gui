@@ -83,6 +83,7 @@ selection-background-color: white" :accessor style))
   ((label :initform "" :initarg :label :accessor label)
    (id :initform 0 :initarg :id :accessor id)
    (ref :initform nil :initarg :ref :accessor ref)
+   (ref-set-hook :initform #'identity :initarg :ref-set-hook :accessor ref-set-hook)
    (map-fn :initform #'identity :initarg :map-fn :accessor map-fn)
    (rmap-fn :initform #'identity :initarg :rmap-fn :accessor rmap-fn)
    (callback :initform #'identity :accessor callback)
@@ -91,6 +92,7 @@ selection-background-color: white" :accessor style))
   (:metaclass qt-class)
   (:qt-superclass "QDialog")
   (:slots
+   ("refSetValue(int)" ref-set-pvb-value)
    ("setValue(int)" set-pvb-value)
    ("incValue(int)" inc-pvb-value)
    ("recallValue(int)" recall-pvb-value))
@@ -106,16 +108,18 @@ selection-background-color: white" :accessor style))
     align))
 
 (defmethod (setf val) (new-val (instance label-spinbox))
-  (format t "directly setting value-cell~%")
+;;;  (format t "directly setting value-cell~%")
   (emit-signal instance "setValue(int)" new-val)
   (when (ref instance)
     (set-cell (ref instance) (funcall (map-fn instance) new-val) :src instance))
+  (if (ref-set-hook instance) (funcall (ref-set-hook instance) new-val))
   new-val)
 
 (defmethod ref-set-cell ((instance label-spinbox) new-val)
-  (with-slots (rmap-fn) instance
+  (with-slots (rmap-fn ref-set-hook) instance
     (emit-signal instance "setValue(int)"
-                 (funcall (rmap-fn instance) new-val))))
+                 (funcall (rmap-fn instance) new-val))
+    (if ref-set-hook (funcall ref-set-hook new-val))))
 
 (defmethod set-ref ((instance label-spinbox) new-ref &key map-fn rmap-fn)
   (with-slots (ref) instance
@@ -149,7 +153,7 @@ selection-background-color: white" :accessor style))
     (#_setText label-box label)
     (#_setAlignment label-box (make-align 130))
     (connect instance "setLabel(QString)" label-box "setText(QString)")
-    (connect text-box "valueChanged(int)" instance "setValue(int)")
+    (connect text-box "valueChanged(int)" instance "refSetValue(int)")
     (connect instance "setValue(int)" instance "setValue(int)")
     (connect instance "incValue(int)" instance "incValue(int)")
     (connect text-box "returnPressed(int)" instance "recallValue(int)")))
@@ -157,16 +161,27 @@ selection-background-color: white" :accessor style))
 (defgeneric set-pvb-value (instance value))
 
 (defmethod set-pvb-value ((instance label-spinbox) value)
-  (#_setValue (text-box instance) value)
-  (funcall (callback instance) (#_value (text-box instance)))
-  (if (ref instance)
-      (set-cell (ref instance) (funcall (map-fn instance) value) :src instance)))
+  (#_setValue (text-box instance) value))
 
+(defgeneric ref-set-pvb-value (instance value)
+  (:method ((instance label-spinbox) value)
+    (funcall (callback instance) value)
+    (if (ref instance)
+        (set-cell (ref instance) (funcall (map-fn instance) value) :src instance))
+    (if (ref-set-hook instance) (funcall (ref-set-hook instance) value))))
+
+
+(defgeneric inc-pvb-value (instance value)
+  (:method ((instance label-spinbox) inc)
+    (set-pvb-value instance (+ (#_value (text-box instance)) inc))))
+
+#|
 (defgeneric inc-pvb-value (instance value)
   (:method ((instance label-spinbox) inc)
     (#_setValue (text-box instance)
                 (+ (#_value (text-box instance)) inc))
     (funcall (callback instance) (#_value (text-box instance)))))
+|#
 
 (defgeneric recall-pvb-value (instance val)
   (:method ((instance label-spinbox) val)
@@ -179,7 +194,7 @@ selection-background-color: white" :accessor style))
 
 ;;; (#_AlignCenter "Qt") <=> (#_Qt::AlignCenter)
 
-;;;   
+;;;
 
 #|
 
