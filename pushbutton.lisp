@@ -51,33 +51,34 @@ QPushButton::menu-indicator {
   (:metaclass qt-class)
   (:qt-superclass "QPushButton")
   (:slots
-   ("clickAction()" do-click)))
+   ("clickAction()" do-click)
+   ("highlightAction(int)" highlight))
+  (:signals
+   ("highlight(int)")))
 
-(defgeneric flash-button (pushbutton)
-  (:method ((instance pushbutton))
-    (with-slots (flash-time on-color off-color) instance
+(defgeneric highlight (pushbutton val)
+  (:method ((instance pushbutton) val)
+;;;    (format t "highlight!~%")
+    (with-slots (on-color off-color) instance
       (#_setStyleSheet
        instance
        (format nil
                "background-color: ~a;
-    border-radius: 4px; 
+    border-radius: 4px;
     border-style: outset;
     border-color: #777777;
     border-width: 1px;
     min-width: 45px;"
-               on-color))
+               (if (zerop val) off-color on-color))))
+    val))
+
+(defgeneric flash-button (pushbutton)
+  (:method ((instance pushbutton))
+    (with-slots (flash-time) instance
+      (highlight instance 1)
       (incudine::at
           (+ (incudine:now) (round (* flash-time incudine::*sample-rate*)))
-        (lambda () (#_setStyleSheet
-       instance
-       (format nil
-               "background-color: ~a;
-    border-radius: 4px; 
-    border-style: outset;
-    border-color: #777777;
-    border-width: 1px;
-    min-width: 45px;"
-               off-color)))))))
+        (lambda () (emit-signal instance "highlight(int)" 0))))))
 
 (defgeneric do-click (instance)
   (:documentation "do click action.")
@@ -93,7 +94,8 @@ QPushButton::menu-indicator {
     (#_setStyleSheet instance style)
     (#_setFocusPolicy instance (#_NoFocus "Qt"))
     (#_setFixedHeight instance height))
-  (connect instance "pressed()" instance "clickAction()"))
+  (connect instance "pressed()" instance "clickAction()")
+  (connect instance "highlight(int)" instance "highlightAction(int)"))
 
 ;;; toggle
 
@@ -105,44 +107,27 @@ QPushButton::menu-indicator {
   (:metaclass qt-class)
   (:qt-superclass "QPushButton")
   (:slots
-   ("clickAction()" toggle-state)
    ("setValue(int)" set-state)
    ("changeValue(int)" change-state))
-   (:signals
+  (:signals
     ("setValue(int)")
     ("changeValue(int)")))
 
-(defgeneric toggle-state (obj))
-
-(defmethod toggle-state ((instance toggle))
+(defmethod do-click ((instance toggle))
   (change-state instance (if (zerop (state instance)) 127 0)))
 
 (defgeneric set-state (obj state)
   (:method ((instance toggle) state)
     (setf (state instance) state)
-    (update-view instance)
+    (emit-signal instance "highlight(int)" state)
     (funcall (callback instance) instance)))
 
 (defgeneric change-state (obj state)
   (:method ((instance toggle) state)
     (setf (state instance) state)
-    (update-view instance)
+    (emit-signal instance "highlight(int)" state)
     (if (ref instance) (set-cell (ref instance) (funcall (map-fn instance) state) :src instance))
     (funcall (callback instance) instance)))
-
-(defgeneric update-view (toggle)
-  (:method ((instance toggle))
-    (with-slots (state on-color off-color) instance
-      (#_setStyleSheet
-       instance
-       (format nil
-               "background-color: ~a;
-    border-radius: 4px; 
-    border-style: outset;
-    border-color: #777777;
-    border-width: 1px;
-    min-width: 45px;"
-               (if (> state 0) on-color off-color))))))
 
 (defmethod (setf val) (new-val (instance toggle))
   (format t "directly setting value-cell~%")
@@ -180,21 +165,6 @@ QPushButton::menu-indicator {
     (connect instance "setValue(int)" instance "setValue(int)")
     (connect instance "changeValue(int)" instance "changeValue(int)")))
 
-
-
-
-
-#|
-(let ((tg (make-instance 'toggle)))
-  (change-state tg 12)
-  )
-(toggle-state (make-instance 'toggle))
-
-(untrace)
- 
-|#
-
-
 (defclass label-pushbutton (pushbutton)
   ((label :initform "" :initarg :label :accessor label)
    (label-box :initform (#_new QLabel) :accessor label-box))
@@ -211,7 +181,8 @@ QPushButton::menu-indicator {
     (#_setText label-box label)
     (#_setAlignment label-box (make-align 130))
     (connect instance "pressed()" instance "clickAction()")
-    (connect instance "setLabel(QString)" label-box "setText(QString)")))
+    (connect instance "setLabel(QString)" label-box "setText(QString)")
+    (connect instance "highlight(int)" instance "highlightAction(int)")))
 
 (defclass label-toggle (toggle)
   ((label :initform "" :initarg :label :accessor label)
@@ -229,10 +200,10 @@ QPushButton::menu-indicator {
     (#_setFixedHeight instance height)
     (connect instance "pressed()" instance "clickAction()")
     (connect instance "setValue(int)" instance "setValue(int)")
-    (connect instance "changeValue(int)" instance "changeValue(int)"))
+    (connect instance "changeValue(int)" instance "changeValue(int)")
+    (connect instance "highlight(int)" instance "highlightAction(int)"))
   (with-slots (label-box label) instance
     (#_setFixedWidth instance 45)
     (#_setText label-box label)
     (#_setAlignment label-box (make-align 130))
     (connect instance "setLabel(QString)" label-box "setText(QString)")))
-
