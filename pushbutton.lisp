@@ -163,7 +163,8 @@ QPushButton::menu-indicator {
     (#_setFixedHeight instance height)
     (connect instance "pressed()" instance "clickAction()")
     (connect instance "setValue(int)" instance "setValue(int)")
-    (connect instance "changeValue(int)" instance "changeValue(int)")))
+    (connect instance "changeValue(int)" instance "changeValue(int)")
+    (connect instance "highlight(int)" instance "highlightAction(int)")))
 
 (defclass label-pushbutton (pushbutton)
   ((label :initform "" :initarg :label :accessor label)
