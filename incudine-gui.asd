@@ -18,6 +18,7 @@
                (:file "gui-class")
                (:file "numbox")
                (:file "labelbox")
+               (:file "spinbox")
                (:file "pushbutton")
                (:file "scrollbar")
                (:file "levelmeter-gui")
@@ -26,5 +27,6 @@
                (:file "stethoscope-incudine")
                (:file "beatstep-gui")
                (:file "nanokontrol-gui")
+               (:file "faderfox-gui")
                ))
  
