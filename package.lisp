@@ -13,6 +13,7 @@
            #:METER-GUI
            #:BEATSTEP-GUI
            #:NANOKONTROL-GUI
+           #:FADERFOX-GUI
            #:METERS
            #:DSP-NODE-IDS
            #:*TEST*

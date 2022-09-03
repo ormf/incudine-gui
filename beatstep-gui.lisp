@@ -115,6 +115,7 @@ background-color: #dddddd;
                                         :label (format nil "~d" (1+ idx))
                                         :id (1+ idx))))
                        (#_setRange (text-box new-lsbox) 0 127)
+                       (#_setButtonSymbols (text-box new-lsbox) (#_NoButtons "QSpinBox"))
                        (setf (aref param-boxes idx) new-lsbox)
                        (let ((lsboxlayout (#_new QHBoxLayout)))
                          (#_addWidget grid (label-box new-lsbox) (1+ row)  column)

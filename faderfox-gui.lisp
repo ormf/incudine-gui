@@ -22,11 +22,12 @@
 (named-readtables:in-readtable :qt)
 
 (defparameter *faderfox-box-style*
- "QSpinBox {
-    background-color: #dddddd;
-}
-
-")
+"border: 1px solid #838383; 
+background-color: #dddddd;
+selection-color: black;
+border-radius: 2px;
+text-align: right;
+selection-background-color: white")
 
 #|
     border-width: 2;
@@ -115,6 +116,7 @@ background-color: #dddddd;
                                         :label (format nil "~d" (1+ idx))
                                         :id (1+ idx))))
                        (#_setRange (text-box new-lsbox) 0 127)
+                       (#_setButtonSymbols (text-box new-lsbox) (#_NoButtons "QSpinBox"))
                        (setf (aref param-boxes idx) new-lsbox)
                        (let ((lsboxlayout (#_new QHBoxLayout)))
                          (#_addWidget grid (label-box new-lsbox) (1+ row)  column)
