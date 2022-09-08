@@ -88,7 +88,7 @@ background-color: #dddddd;
 |#
 
 (defclass faderfox-grid (cudagui-tl-mixin)
-  ((rows :initform 2 :initarg :rows :accessor rows)
+  ((rows :initform 4 :initarg :rows :accessor rows)
    (cols :initform 8 :initarg :cols :accessor cols)
    (cleanup-fn :initform #'empty-fn :initarg :cleanup-fn :accessor cleanup-fn)
    (param-boxes :initform (make-array 16) :accessor param-boxes)
@@ -109,8 +109,8 @@ background-color: #dddddd;
     (let ((main (#_new QVBoxLayout instance))
           (grid (#_new QGridLayout)))
       (loop for row below rows
-         do (loop for column below (* 2 cols) by 2
-                  do (let* ((idx (+ (/ column 2) (* 8 row)))
+            do (loop for column below cols
+                  do (let* ((idx (+ column (* 4 row)))
                             (new-lsbox (make-instance
                                         'label-spinbox
                                         :label (format nil "~d" (1+ idx))
@@ -119,13 +119,13 @@ background-color: #dddddd;
                        (#_setButtonSymbols (text-box new-lsbox) (#_NoButtons "QSpinBox"))
                        (setf (aref param-boxes idx) new-lsbox)
                        (let ((lsboxlayout (#_new QHBoxLayout)))
-                         (#_addWidget grid (label-box new-lsbox) (1+ row)  column)
+                         (#_addWidget grid (label-box new-lsbox) (1+ row) (* 2 column))
                          (#_addWidget lsboxlayout (text-box new-lsbox))
                          (#_addStretch lsboxlayout)
-                         (#_addLayout grid lsboxlayout (1+ row) (1+ column))))))
+                         (#_addLayout grid lsboxlayout (1+ row) (+ 1 (* 2 column)))))))
       (loop for row below rows
-         do (loop for column below (* 2 cols) by 2
-                  do (let* ((idx (+ (/ column 2) (* 8 row)))
+         do (loop for column from (/ cols 2) below cols
+                  do (let* ((idx (+ (- column (/ cols 2)) (* 4 row)))
                             (new-button (make-instance 'toggle :state 0 :id (1+ idx))))
                        (setf (aref buttons idx) new-button)
                        (#_setStyleSheet new-button *faderfox-pushbutton-style*)
@@ -135,7 +135,7 @@ background-color: #dddddd;
                     (let ((buttonlayout (#_new QHBoxLayout)))
                       (#_addWidget buttonlayout new-button)
                       (#_addStretch buttonlayout)
-                      (#_addLayout grid buttonlayout (+ 3 row) (1+ column))))))
+                      (#_addLayout grid buttonlayout (1+ row) (+ 2 (* 2 column)))))))
       (#_addLayout main grid))))
 
 ;;; pvb is "Parameter-View-Box"
