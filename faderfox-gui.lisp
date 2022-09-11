@@ -109,7 +109,7 @@ background-color: #dddddd;
     (let ((main (#_new QVBoxLayout instance))
           (grid (#_new QGridLayout)))
       (loop for row below rows
-            do (loop for column below cols
+            do (loop for column below (/ cols 2)
                   do (let* ((idx (+ column (* 4 row)))
                             (new-lsbox (make-instance
                                         'label-spinbox
