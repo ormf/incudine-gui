@@ -129,3 +129,4 @@
   (:defaults 2 8 nil 1024 8192 t)
   (if process?
       (foreach-frame (bus-scope-vug numchans bus-num gui bufsize bufmaxsize))))
+#x02c6

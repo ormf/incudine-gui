@@ -608,4 +608,3 @@
 
 (defun scope (&key (id "Stethoscope") (group 400) (bus 0) (num-chans 2))
   (gui-funcall (create-tl-widget 'stethoscope id :group group :bus-num bus :num-chans num-chans)))
-

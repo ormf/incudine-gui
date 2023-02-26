@@ -8,6 +8,7 @@
   (:export #:GUI-START
            #:GUI-STOP
            #:FIND-GUI
+           #:LEVELMETER
            #:STETHOSCOPE
            #:SCOPE
            #:METER-GUI

@@ -28,8 +28,7 @@
    ("paintEvent" paint-event))
   (:slots
    ("changeLevel(int)" (lambda (this newval)
-                         (setf (level this)
-                               newval)
+                         (setf (level this) newval)
 ;;;                         (#_setUpdatesEnabled (parent this) nil)
                          (setf (repaint? (parent this)) nil)
                          (#_repaint this)
@@ -55,24 +54,22 @@
 
 (defmethod paint-event ((instance levelmeter) ev)
   (declare (ignore ev))
-  ;; (let ((width (#_width instance))
-  ;;       (height (#_height instance)))
-  ;;   (with-slots (painter background pen-style
-  ;;                        red-brush green-brush
-  ;;                        yellow-brush level )
-  ;;       instance
-  ;;     (#_begin painter instance)
-  ;;     (#_setBackground painter background)
-  ;;     (#_eraseRect painter (#_rect instance))
-  ;;     (#_setPen painter pen-style)
-  ;;     (cond
-  ;;       ((> level 90) (#_setBrush painter red-brush))
-  ;;       ((> level 80) (#_setBrush painter yellow-brush))
-  ;;       (t (#_setBrush painter green-brush)))
-  ;;     (#_drawRect painter 0 height width (round (- 0 (* height 0.01 level))))
-  ;;     (#_end painter)
-  ;;     ))
-  )
+  (let ((width (#_width instance))
+        (height (#_height instance)))
+    (with-slots (painter background pen-style
+                         red-brush green-brush
+                         yellow-brush level )
+        instance
+      (#_begin painter instance)
+      (#_setBackground painter background)
+      (#_eraseRect painter (#_rect instance))
+      (#_setPen painter pen-style)
+      (cond
+        ((> level 90) (#_setBrush painter red-brush))
+        ((> level 80) (#_setBrush painter yellow-brush))
+        (t (#_setBrush painter green-brush)))
+      (#_drawRect painter 0 height width (round (- 0 (* height 0.01 level))))
+      (#_end painter))))
 
 
 (defun change-level (levelmeter value)
@@ -92,8 +89,8 @@
   (:metaclass qt-class)
   (:qt-superclass "QWidget")
   (:override
-   ("paintEvent()" paint-event)
-   ("closeEvent()" close-event)))
+   ("paintEvent" paint-event)
+   ("closeEvent" close-event)))
 
 (defmethod initialize-instance :after ((instance levelmeter-main) &key parent)
   (if parent
@@ -104,7 +101,7 @@
   (with-slots (pen-color painter layout num meters) instance
     (setf painter (#_new QPainter instance))
     (setf layout (#_new QHBoxLayout instance))
-    (setf pen-color (#_new QColor 255 255 255 255))
+    (setf pen-color (#_new QColor 80 80 80 255))
     (setf meters (make-array (list num)
                              :element-type 'levelmeter
                              :initial-element (make-instance 'levelmeter)))
@@ -146,12 +143,12 @@
       (error "widget ~a already existing. Please choose another name." id)
       (create-tl-widget 'levelmeter-main id :num num :dsp-node-ids dsp-node-ids)))
 
-;;; (meter-gui :num 2 :id "Meters")
+;;; (meter-gui :num 2 :id "Meters2")
 #|
 (time (create-tl-widget 'levelmeter-main "m01" :num 2 :dsp-node-ids nil))
 (time (meter-gui :num 16 :id "Meters02"))
 (meter-gui :num 16 :id "Meters02")
-;;;(find-gui "Meters02")
+;;; (setf (aref (meters (find-gui "Meters02")) 0) 10) (paint-event (find-gui "Meters02") )
 
 (time (change-level (aref (meters (find-gui "Meters")) 0) (random 100)))
 

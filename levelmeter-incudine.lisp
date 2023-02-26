@@ -170,37 +170,38 @@ The alternative is a foreign *GUI-BUS-POINTER*:
         (setf sum +sample-zero+)
         (setf count 0)))))
 
+(declaim (inline env-levelmeter))
 (define-vug env-levelmeter (in (freq fixnum) (meter incudine-gui::levelmeter)
-                            (periods channel-number))
-  (:defaults +sample-zero+ 10 nil 2)
-  (with ((size (round-sample (/ (* periods *sample-rate*) freq)))
-         (hanning (make-buffer (1+ size) :fill-function (hanning-rms)))
-         (sums (make-frame periods :zero-p t))
-         (bufidx (make-array periods :element-type 'channel-number))
-         (max +sample-zero+)
-         (value 0)
-         (last-value #.most-positive-fixnum))
-    (declare  (fixnum size value last-value) (sample max))
-    (initialize
-      (dotimes (i periods)
-        (setf (aref bufidx i)
-              (reduce-warnings (floor (* i (round (/ size periods))))))))
-    (dotimes (i periods)
-      (incf (smp-ref sums i) (* in in (buffer-value hanning (aref bufidx i))))
-      (when (>= (incf (aref bufidx i)) size)
-        (progn
-          (setf value
-                (round-sample
-                  (+ 100 (linear->db
-                          (sqrt (the non-negative-sample (smp-ref sums i)))))))
-          (if (/= last-value value)
-              (progn
-                (nrt-funcall
-                 (lambda ()
-                   (cuda-gui:change-level meter value)))
-                (setf last-value value)))
-          (setf (smp-ref sums i) +sample-zero+)
-          (setf (aref bufidx i) 0))))))
+                               (periods channel-number))
+     (:defaults +sample-zero+ 10 nil 2)
+     (with ((size (round-sample (/ (* periods *sample-rate*) freq)))
+            (hanning (make-buffer (1+ size) :fill-function (hanning-rms)))
+            (sums (make-frame periods :zero-p t))
+            (bufidx (make-array periods :element-type 'channel-number))
+            (max +sample-zero+)
+            (value 0)
+            (last-value #.most-positive-fixnum))
+       (declare  (fixnum size value last-value) (sample max))
+       (initialize
+        (dotimes (i periods)
+          (setf (aref bufidx i)
+                (reduce-warnings (floor (* i (round (/ size periods))))))))
+       (dotimes (i periods)
+         (incf (smp-ref sums i) (* in in (buffer-value hanning (aref bufidx i))))
+         (when (>= (incf (aref bufidx i)) size)
+           (progn
+             (setf value
+                   (round-sample
+                    (+ 100 (linear->db
+                            (sqrt (the non-negative-sample (smp-ref sums i)))))))
+             ;; (if (/= last-value value)
+             ;;     (progn
+             ;;       (nrt-funcall
+             ;;        (lambda ()
+             ;;          (cuda-gui:change-level meter value)))
+             ;;       (setf last-value value)))
+             (setf (smp-ref sums i) +sample-zero+)
+             (setf (aref bufidx i) 0))))))
 
 (dsp! env-monometer ((freq fixnum) (gui incudine-gui::levelmeter) (chan channel-number)
                      (hop-size channel-number))

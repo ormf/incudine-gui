@@ -145,7 +145,7 @@ body)
                  (when (eq (first *gui-event*) 'run)
                    (funcall (second *gui-event*))
                    (setf *gui-event* nil))))
-            (sleep .5)
+            (sleep 2.5)
             (if (and *gui-thread* (bt:thread-alive-p *gui-thread*))
                 (progn
                   (qt::init-qt-fast-calls)

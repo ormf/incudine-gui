@@ -66,7 +66,7 @@
 (define-vug input-bus ((channel fixnum))
   (bus (the fixnum
          (+ (the fixnum
-              (* current-frame *number-of-bus-channels*))
+              (* current-frame *number-of-input-bus-channels*))
             channel))))
 
 (dsp! cp-input-buses ((first-in-bus channel-number))
@@ -112,7 +112,7 @@
   (mix-bus-to-out :id 3 :startidx 16 :head 300)
   (cp-output-buses :id 4 :tail 300))
 
-;;;(setup-io)
+(setup-io)
 
 (defun node-free-unprotected ()
  (dogroup (n (node 200))
